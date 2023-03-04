@@ -35,6 +35,7 @@ def test_cell_methods():
         assert len(cell.vertex_orders()) > 0
         assert len(cell.vertices()) > 0
         assert len(cell.face_areas()) > 0
+        assert len(cell.face_orders()) > 0
         assert len(cell.face_freq_table()) > 0
         assert len(cell.face_vertices()) > 0
         assert len(cell.face_perimeters()) > 0

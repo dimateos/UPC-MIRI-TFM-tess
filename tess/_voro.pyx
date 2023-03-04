@@ -41,9 +41,9 @@ cdef extern from "voro++.hh" namespace "voro":
         double number_of_faces()
         double number_of_edges()
 
-        void vertex_orders(vector[int]&)
+        void vertex_orders(vector[int] &)
         void vertices(double,double,double, vector[double]&)
-        void face_areas(vector[double]&)
+        void face_areas(vector[double] &)
         void face_orders(vector[int] &)
         void face_freq_table(vector[int] &)
         void face_vertices(vector[int] &)
@@ -141,6 +141,16 @@ cdef class Cell:
         A list of floats. Each inner list corresponds to a face."""
         cdef vector[double] v
         self.thisptr.face_areas(v)
+        return v
+
+    def face_orders(self):
+        """A list of the number of edges per face.
+
+        Returns
+        -------
+        A list of integers. Each integer corresponds to the number of edges of the respective face."""
+        cdef vector[int] v
+        self.thisptr.face_orders(v)
         return v
 
     def face_freq_table(self):
