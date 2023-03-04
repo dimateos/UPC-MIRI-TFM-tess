@@ -1,3 +1,6 @@
+.vscode/
+
+# original
 src/voro++
 src/libvoro++.a
 *.o
