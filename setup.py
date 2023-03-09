@@ -36,7 +36,6 @@ extension = Extension(
             language="c++",
 )
 
-
 class cython_sdist(sdist):
     # Set sdist to make the .cpp file
     # from http://stackoverflow.com/a/18418524/4190270

@@ -218,7 +218,7 @@ You may want to check that all points are within the box, and none are overlappi
     def get_walls(self):
         """
         Get the size of the box.
-        
+
         Returns
         -------
         limits : two 3-tuples of float
