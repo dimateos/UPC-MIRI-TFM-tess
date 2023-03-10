@@ -22,7 +22,7 @@ can give information on its volume, centroid, number of faces, surface area, etc
 made with packings of spherical particles in mind, possibly with variable sizes.
 
 """
-import importlib
+import importlib, sys
 from setuptools import setup, Extension
 from setuptools.command.sdist import sdist
 
@@ -34,6 +34,9 @@ extension = Extension(
             sources=["tess/_voro.pyx", "src/voro++.cc"],
             include_dirs=["src"],
             language="c++",
+            # Reduce the severity of warnings (Voro++ has some warned casting and unused variables)
+            extra_compile_args=["/W2"] if sys.platform.startswith('win') else [],
+            # define_macros=[('_CRT_SECURE_NO_WARNINGS', '')] if sys.platform.startswith('win') else [],
 )
 
 class cython_sdist(sdist):

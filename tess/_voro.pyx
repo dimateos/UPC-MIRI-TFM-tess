@@ -1,6 +1,7 @@
 # distutils: language = c++
 # distutils: include_dirs = src
 # distutils: sources = src/voro++.cc
+# cython: language_level=3, boundscheck=False
 
 from __future__ import division
 
