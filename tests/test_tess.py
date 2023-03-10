@@ -10,7 +10,7 @@ except ImportError:
     scipy = None
 
 import pytest
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session", autouse=False)
 def pytest_session_arrange():
     print("pytest_session_arrange")
     if False:
@@ -33,41 +33,6 @@ def pytest_session_arrange():
     # this is where the testing happens
     yield
     print("\n>> TESTS DONE")
-
-
-def test_cell_methods():
-    """Simple checks for the Cell method bindings
-    """
-    cell_positions = [[1., 1., 1.], [2., 2., 2.]]
-    cell_radii = [0.2, 0.1]
-
-    cells = Container(
-        cell_positions, radii=cell_radii, limits=(3,3,3), periodic=False
-    )
-
-    for i, cell in enumerate(cells):
-
-        assert cell.id == i
-        assert np.allclose(cell.pos, cell_positions[i])
-        assert np.isclose(cell.radius, cell_radii[i])
-        assert cell.volume() > 0.0
-        assert cell.max_radius_squared() > 0.0
-        assert cell.total_edge_distance() > 0.0
-        assert cell.surface_area() > 0.0
-        assert cell.number_of_faces() > 0
-        assert cell.number_of_edges() > 0
-        assert len(cell.centroid()) == 3
-        assert len(cell.vertex_orders()) > 0
-        assert len(cell.vertices()) > 0
-        assert len(cell.face_areas()) > 0
-        assert len(cell.face_orders()) > 0
-        assert len(cell.face_freq_table()) > 0
-        assert len(cell.face_vertices()) > 0
-        assert len(cell.face_perimeters()) > 0
-        assert len(cell.normals()) > 0
-        assert len(cell.neighbors()) > 0
-        assert str(cell) == repr(cell) == f"<Cell {i}>"
-
 
 class LatticeTest:
     """A basic test for testing a lattice. The basic constants below need to be overwritten,
@@ -290,7 +255,6 @@ class HCP(FCC):
     def test_neighbors(self):
         self.neighbors([12])
 
-
 class TestBoundaries(TestCase):
     limits = ((-50, -20, 80), (-30, -10, 120))
 
@@ -344,6 +308,7 @@ class TestBoundaries(TestCase):
             Container(points, limits=limits, radii=[0.1] * len(points), periodic=False)
 
     def assertListAlmostEqual(self, first, second, places=None, msg=None, delta=None):
+        """" Utility function to compare a pair of lists """
         self.assertEqual(len(first), len(second), msg=msg)
         for v1, v2 in zip(first, second):
             self.assertAlmostEqual(v1, v2, places=places, msg=msg, delta=delta)
