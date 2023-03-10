@@ -9,6 +9,31 @@ try:
 except ImportError:
     scipy = None
 
+import pytest
+@pytest.fixture(scope="session", autouse=True)
+def pytest_session_arrange():
+    print("pytest_session_arrange")
+    if False:
+        print("\n>> TESTS SETUP")
+
+        # check correct python env!
+        import os, sys
+        print("> sys.version_info", sys.version_info)
+        print("> sys.executable", sys.executable)
+        print("> os.getcwd()", os.getcwd())
+
+        # redo the cython setup? cannot be done when the tests are already running...
+        # but alternative calling setup + pytest from outside does not bring test explorer results
+        try:
+            os.system(sys.executable + " setup.py develop")
+            # subprocess.call(sys.executable + " setup.py develop") # avoid invoking shell? same
+        except:
+            print("TESTS FAILED CYTHON RECOMPILE...")
+
+    # this is where the testing happens
+    yield
+    print("\n>> TESTS DONE")
+
 
 def test_cell_methods():
     """Simple checks for the Cell method bindings
