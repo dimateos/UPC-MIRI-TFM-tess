@@ -52,6 +52,8 @@ cdef extern from "voro++.hh" namespace "voro":
         void normals(vector[double] &)
         void neighbors(vector[int] &)
 
+        void translate(double,double,double)
+
     cdef cppclass c_loop_all:
         c_loop_all(container_base&)
         cbool start()
@@ -209,6 +211,12 @@ cdef class Cell:
         cdef vector[int] v
         self.thisptr.neighbors(v)
         return v
+
+    def translate(self, x,y,z):
+        self.x+= x # all vertices, centroid, etc are given relative to the coordinate system of the particle
+        self.y+= y #    which keeps its center at the oiginal particle point
+        self.z+= z
+        # self.thisptr.translate(x,y,z) # translates only the vertices!
 
     def __str__(self):
         return '<Cell {0}>'.format(self._id)

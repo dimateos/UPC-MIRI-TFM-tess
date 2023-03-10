@@ -108,3 +108,29 @@ class TestCell(TestCase):
         self.assertNestedListAlmostEqual(vertices, cell.vertices())
         self.assertAlmostEqual(volume, cell.volume())
 
+
+    def test_transform(self):
+        l = 0.5
+        c = [0,0,0]
+        bb = [ [cc-l for cc in c], [cc+l for cc in c] ]
+        cont = Container(points=[(0,0,0)], limits=bb)
+        cell = cont[0]
+
+        pos =                  (0.0, 0.0, 0.0)
+        centroid =             (0.0, 0.0, 0.0)
+        vertices =             [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5)]
+
+        self.assertListAlmostEqual(pos, cell.pos)
+        self.assertListAlmostEqual(centroid, cell.centroid())
+        self.assertNestedListAlmostEqual(vertices, cell.vertices())
+
+        disp = 10
+        cell.translate(disp, disp, disp)
+
+        pos = tuple(x+disp for x in pos)
+        centroid = tuple(x+disp for x in centroid)
+        vertices = [tuple(x+disp for x in vert) for vert in vertices]
+
+        self.assertListAlmostEqual(pos, cell.pos)
+        self.assertListAlmostEqual(centroid, cell.centroid())
+        self.assertNestedListAlmostEqual(vertices, cell.vertices())
