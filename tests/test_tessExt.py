@@ -100,13 +100,21 @@ class TestCell(TestCase):
         self.assertAlmostEqual(number_of_faces, cell_number_of_faces)
         self.assertListAlmostEqual(vertex_orders, cell_vertex_orders)
 
-    def assert_cubic_cell_scaleUnit(self, cell):
+    def assert_cubic_cell_scale(self, cell, r=0.5):
+        # 1D relation on the edge dimension tranlates to 2D and 3D
+        rel = r / 0.5
+        rel2 = rel * rel
+        rel3 = rel2 * rel
+
         face_areas =           [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+        face_areas =           [ a*rel2 for a in face_areas ]
         face_perimeters =      [4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
-        max_radius_squared =   3.0
-        surface_area =         6.0
-        total_edge_distance =  12.0
-        volume =               1.0
+        face_perimeters =      [ p*rel for p in face_perimeters ]
+
+        max_radius_squared =   3.0 * rel2
+        surface_area =         6.0 * rel2
+        total_edge_distance =  12.0 * rel
+        volume =               1.0 * rel3
 
         cell_face_areas = cell.face_areas()
         cell_face_perimeters = cell.face_perimeters()
@@ -151,7 +159,7 @@ class TestCell(TestCase):
 
         self.assert_cubic_cell_basic(cell)
         self.assert_cubic_cell_geo(cell)
-        self.assert_cubic_cell_scaleUnit(cell)
+        self.assert_cubic_cell_scale(cell)
         self.assert_cubic_cell_pos(cell)
 
     def test_methods_data_offcentered(self):
@@ -162,7 +170,7 @@ class TestCell(TestCase):
 
         self.assert_cubic_cell_basic(cell)
         self.assert_cubic_cell_geo(cell)
-        self.assert_cubic_cell_scaleUnit(cell)
+        self.assert_cubic_cell_scale(cell)
         self.assert_cubic_cell_pos(cell, 0, r, c)
 
     def test_methods_data_nonunit(self):
@@ -174,9 +182,10 @@ class TestCell(TestCase):
         self.assert_cubic_cell_basic(cell)
         self.assert_cubic_cell_geo(cell)
         self.assert_cubic_cell_pos(cell, 0, r, c)
+        self.assert_cubic_cell_scale(cell, r)
 
         try:
-            self.assert_cubic_cell_scaleUnit(cell)
+            self.assert_cubic_cell_scale(cell)
             raise self.failureException("Scale for non unit cube should fail")
         except: pass
 
@@ -189,7 +198,7 @@ class TestCell(TestCase):
         cell.translate(disp, disp, disp)
         self.assert_cubic_cell_basic(cell)
         self.assert_cubic_cell_geo(cell)
-        self.assert_cubic_cell_scaleUnit(cell)
+        self.assert_cubic_cell_scale(cell)
         self.assert_cubic_cell_pos(cell, disp)
 
         try:
@@ -203,10 +212,53 @@ class TestCell(TestCase):
         cell.translate(0, 0, -disp)
         self.assert_cubic_cell_basic(cell)
         self.assert_cubic_cell_geo(cell)
-        self.assert_cubic_cell_scaleUnit(cell)
+        self.assert_cubic_cell_scale(cell)
         self.assert_cubic_cell_pos(cell, 0)
 
 
+    def test_plane_halfY(self):
+        # unit cube centered at the origin
+        cell = self.get_cubic_cell()
+
+        # cut though the middle (remove positive Y halfspace)
+        cell.plane(0,1,0,0)
+        self.assert_cubic_cell_basic(cell)
+
+        # faces indices may get swapped?, it is the case here
+        # self.assert_cubic_cell_geo(cell)
+
+        try:
+            self.assert_cubic_cell_scale(cell)
+            raise self.failureException("Cut so should have half the volume etc")
+        except: pass
+        try:
+            self.assert_cubic_cell_pos(cell)
+            raise self.failureException("Cut so should have shifted centroid and non positive Y vertices")
+        except: pass
+
+        # check proper magnitudes (some)
+        volume =               0.5
+        surface_area =         4.0
+        total_edge_distance =  10.0
+        cell_volume = cell.volume()
+        cell_surface_area = cell.surface_area()
+        cell_total_edge_distance = cell.total_edge_distance()
+        self.assertAlmostEqual(volume, cell_volume)
+        self.assertAlmostEqual(surface_area, cell_surface_area)
+        self.assertAlmostEqual(total_edge_distance, cell_total_edge_distance)
+
+        # check centroid and vertices (locals are the same, the cell was positioned at the origin)
+        pos =                  (0.0, 0.0, 0.0)
+        centroid =             (0.0, -0.25, 0.0)
+        vertices =             [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (-0.5, 0.0, -0.5), (0.5, 0.0, -0.5), (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.0, 0.5), (0.5, 0.0, 0.5)]
+        cell_pos = cell.pos
+        cell_centroid = cell.centroid()
+        cell_vertices = cell.vertices()
+        self.assertListAlmostEqual(pos, cell_pos)
+        self.assertListAlmostEqual(centroid, cell_centroid)
+        self.assertListAlmostEqual(centroid, cell.centroid_local())
+        self.assertNestedListAlmostEqual(vertices, cell_vertices)
+        self.assertNestedListAlmostEqual(vertices, cell.vertices_local())
 
 
 

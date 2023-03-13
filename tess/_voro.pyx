@@ -54,6 +54,7 @@ cdef extern from "voro++.hh" namespace "voro":
         void neighbors(vector[int] &)
 
         # void translate(double,double,double)
+        cbool plane(double,double,double,double d)
 
     cdef cppclass c_loop_all:
         c_loop_all(container_base&)
@@ -98,6 +99,7 @@ cdef class Cell:
         """The ``id`` of the cell, which should generally correspond to its index in the
         ``Container``."""
         return self._id
+
 
     def volume(self):
         "Cell volume"
@@ -235,11 +237,17 @@ cdef class Cell:
         self.z+= z
         # self.thisptr.translate(x,y,z) # translates only the vertices, plus breaks other methods!
 
+    def plane(self, x,y,z,d):
+        # false when the plane removes the whole volume
+        assert self.thisptr.plane(x,y,z,d)
+
+
     def __str__(self):
         return '<Cell {0}>'.format(self._id)
 
     def __repr__(self):
         return '<Cell {0}>'.format(self._id)
+
 
 cdef class Container:
     cdef container *thisptr
@@ -295,6 +303,7 @@ cdef class Container:
             (self.thisptr.ax, self.thisptr.ay, self.thisptr.az),
             (self.thisptr.bx, self.thisptr.by, self.thisptr.bz),
         )
+
 
 cdef class ContainerPoly:
     cdef container_poly *thisptr
