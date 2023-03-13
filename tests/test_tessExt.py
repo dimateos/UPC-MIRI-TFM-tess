@@ -298,6 +298,62 @@ class TestCell(TestCase):
         self.assertAlmostEqual(0.25, cell.volume())
 
 
+    def test_cut_particle(self):
+        # unit cube centered at the origin
+        r = 0.5
+        cell = self.get_cubic_cell(r)
 
+        # set a particle in the middle of the top face
+        cell.cut_plane_particle(0,0.5,0)
 
+        try:
+            self.assert_cubic_cell_geo(cell)
+            raise self.failureException("Diff neighbours")
+        except: pass
 
+        try:
+            self.assert_cubic_cell_scale(cell, r)
+            raise self.failureException("Cut volume")
+        except:
+            self.assertAlmostEqual(0.75, cell.volume())
+            pass
+
+        try:
+            self.assert_cubic_cell_pos(cell, 0, r)
+            raise self.failureException("Cut volume, so different vertices")
+        except:
+            self.assertEqual(8, len(cell.vertices()))
+            pass
+
+    def test_cut_particle_exception(self):
+        # unit cube centered at the origin
+        cell = self.get_cubic_cell()
+
+        try:
+            # actually raises execpt unline cut_plane
+            cell.cut_plane_particle(0,0,0)
+            raise self.failureException("Cell deleted entirely")
+        except: pass
+
+        # no influence
+        cell.cut_plane_particle(0,2,0)
+        self.assert_cubic_cell_basic(cell)
+        self.assert_cubic_cell_geo(cell)
+        self.assert_cubic_cell_scale(cell)
+        self.assert_cubic_cell_pos(cell)
+
+        # override the top plane?
+        cell.cut_plane_particle(0,1,0)
+        self.assert_cubic_cell_basic(cell)
+        # self.assert_cubic_cell_geo(cell) # swapped faces indices + wall id overwritten
+        self.assert_cubic_cell_scale(cell)
+        self.assert_cubic_cell_pos(cell)
+
+    def test_cut_particle_index(self):
+        # unit cube centered at the origin
+        cell = self.get_cubic_cell()
+
+        cell.cut_plane_particle(0,1,0)
+        assert 0 in cell.neighbors()
+        cell.cut_plane_particle(0,1,0, -10)
+        assert -10 in cell.neighbors()

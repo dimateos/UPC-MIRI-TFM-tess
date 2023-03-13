@@ -56,6 +56,8 @@ cdef extern from "voro++.hh" namespace "voro":
         # void translate(double,double,double)
         # cbool plane(double,double,double, double rsq)
         cbool nplane(double,double,double, double rsq, int p_id)
+        # cbool plane(double,double,double)
+        cbool nplane(double,double,double, int p_id)
 
     cdef cppclass c_loop_all:
         c_loop_all(container_base&)
@@ -247,6 +249,12 @@ cdef class Cell:
         """
         assert self.thisptr.nplane(x,y,z, rsq, p_id)
 
+    def cut_plane_particle(self, x,y,z, p_id=0):
+        """ Cuts the cell by the plane corresponding to the perpendicular bisector of a particle
+            * the cut face will have reference wall id==p_id as neighbour
+            * should be false likewise cut_plane, but in this case it is actually trigered by other particles?
+        """
+        assert self.thisptr.nplane(x,y,z, p_id)
 
 
     def __str__(self):
