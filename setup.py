@@ -26,6 +26,18 @@ import importlib, sys
 from setuptools import setup, Extension
 from setuptools.command.sdist import sdist
 
+comp_args = []
+link_args = []
+macros = []
+
+if sys.platform.startswith('win'):
+    # Reduce the severity of warnings (Voro++ has some warned casting and unused variables)
+    comp_args += ["/W2"]
+    # Specific warnings, already suppressed
+    # macros += [('_CRT_SECURE_NO_WARNINGS', '')]
+    # Try to debug some c++ code?
+    # comp_args += ["/Zi", "/Od", "/Ob0"]
+    # link_args += ["-debug"]
 
 # setuptools transparently fallback to using the cpp file if cython is not available. See:
 # https://setuptools.pypa.io/en/latest/userguide/distribution.html#distributing-extensions-compiled-with-cython
@@ -34,9 +46,9 @@ extension = Extension(
             sources=["tess/_voro.pyx", "src/voro++.cc"],
             include_dirs=["src"],
             language="c++",
-            # Reduce the severity of warnings (Voro++ has some warned casting and unused variables)
-            extra_compile_args=["/W2"] if sys.platform.startswith('win') else [],
-            # define_macros=[('_CRT_SECURE_NO_WARNINGS', '')] if sys.platform.startswith('win') else [],
+            extra_compile_args=comp_args,
+            extra_link_args=link_args,
+            define_macros=macros,
 )
 
 class cython_sdist(sdist):

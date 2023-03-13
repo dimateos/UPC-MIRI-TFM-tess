@@ -1,5 +1,6 @@
 .vscode/
 *.pyd
+*.pdb
 
 # original
 src/voro++
