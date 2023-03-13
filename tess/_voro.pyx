@@ -44,6 +44,7 @@ cdef extern from "voro++.hh" namespace "voro":
 
         void vertex_orders(vector[int] &)
         void vertices(double,double,double, vector[double]&)
+        void vertices(vector[double]&)
         void face_areas(vector[double] &)
         void face_orders(vector[int] &)
         void face_freq_table(vector[int] &)
@@ -52,7 +53,7 @@ cdef extern from "voro++.hh" namespace "voro":
         void normals(vector[double] &)
         void neighbors(vector[int] &)
 
-        void translate(double,double,double)
+        # void translate(double,double,double)
 
     cdef cppclass c_loop_all:
         c_loop_all(container_base&)
@@ -120,6 +121,12 @@ cdef class Cell:
             self.thisptr.centroid(cx,cy,cz)
             x,y,z = self.pos
             return (cx+x,cy+y,cz+z)
+    def centroid_local(self):
+        cdef double cx = 0
+        cdef double cy = 0
+        cdef double cz = 0
+        self.thisptr.centroid(cx,cy,cz)
+        return (cx,cy,cz)
 
     def vertex_orders(self):
         cdef vector[int] v
@@ -134,6 +141,16 @@ cdef class Cell:
         A list of 3-tuples of floats. Each tuple corresponds to a single vertex."""
         cdef vector[double] v
         self.thisptr.vertices(self.x, self.y, self.z, v)
+        return list(zip(v[::3], v[1::3], v[2::3]))
+
+    def vertices_local(self):
+        """A list of all the locations of the vertices of each face in local coordinates.
+
+        Returns
+        -------
+        A list of 3-tuples of floats. Each tuple corresponds to a single vertex."""
+        cdef vector[double] v
+        self.thisptr.vertices(v)
         return list(zip(v[::3], v[1::3], v[2::3]))
 
     def face_areas(self):
@@ -216,7 +233,7 @@ cdef class Cell:
         self.x+= x # all vertices, centroid, etc are given relative to the coordinate system of the particle
         self.y+= y #    which keeps its center at the oiginal particle point
         self.z+= z
-        # self.thisptr.translate(x,y,z) # translates only the vertices!
+        # self.thisptr.translate(x,y,z) # translates only the vertices, plus breaks other methods!
 
     def __str__(self):
         return '<Cell {0}>'.format(self._id)

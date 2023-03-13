@@ -12,6 +12,7 @@ except ImportError:
 
 class TestCell(TestCase):
 
+    # General asserting utilities
     def assertListAlmostEqual(self, first, second, places=None, msg=None, delta=None):
         """" Utility function to compare a pair of lists such as a vector """
         self.assertEqual(len(first), len(second), msg=msg)
@@ -26,9 +27,9 @@ class TestCell(TestCase):
             for v1, v2 in zip(l1, l2):
                 self.assertAlmostEqual(v1, v2, places=places, msg=msg, delta=delta)
 
+
     def test_methods(self):
-        """Simple checks for the Cell method bindings
-        """
+        """ Simple checks for the Cell method bindings """
         cell_positions = [[1., 1., 1.], [2., 2., 2.]]
         cell_radii = [0.2, 0.1]
 
@@ -58,13 +59,11 @@ class TestCell(TestCase):
             assert len(cell.neighbors()) > 0
             assert str(cell) == repr(cell) == f"<Cell {i}>"
 
-
-    def get_cubic_cell(self):
-        """" return a cubic cell of side 1 centered at 000 """
-        c = (0,0,0)
-        r = 0.5
+    # Test cube asserting utilities
+    def get_cubic_cell(self, r=0.5, c=(0,0,0)):
+        """" return a cubic cell of side r centered at c """
         bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
-        cont = Container(points=[(0,0,0)], limits=bb)
+        cont = Container(points=[c], limits=bb)
         return cont[0]
 
     def assert_cubic_cell_basic(self, cell):
@@ -101,7 +100,7 @@ class TestCell(TestCase):
         self.assertAlmostEqual(number_of_faces, cell_number_of_faces)
         self.assertListAlmostEqual(vertex_orders, cell_vertex_orders)
 
-    def assert_cubic_cell_scale(self, cell):
+    def assert_cubic_cell_scaleUnit(self, cell):
         face_areas =           [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         face_perimeters =      [4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
         max_radius_squared =   3.0
@@ -122,20 +121,28 @@ class TestCell(TestCase):
         self.assertAlmostEqual(total_edge_distance, cell_total_edge_distance)
         self.assertAlmostEqual(volume, cell_volume)
 
-    def assert_cubic_cell_pos(self, cell, disp=0):
-        pos =                  (0.0, 0.0, 0.0)
-        centroid =             (0.0, 0.0, 0.0)
-        vertices =             [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5)]
+    def assert_cubic_cell_pos(self, cell, disp=0, r=0.5, c=(0,0,0)):
+        pos =                  c
+        centroid_local =       (0.0, 0.0, 0.0) # relative to c, same as vertices_local
+        vertices_local =       [(-r, -r, -r), (r, -r, -r), (-r, r, -r), (r, r, -r), (-r, -r, r), (r, -r, r), (-r, r, r), (r, r, r)]
+
+        centroid =             c
+        vertices = [tuple( map(sum, zip(vert, c)) ) for vert in vertices_local]
+
         pos = tuple(x+disp for x in pos)
         centroid = tuple(x+disp for x in centroid)
         vertices = [tuple(x+disp for x in vert) for vert in vertices]
 
         cell_pos = cell.pos
         cell_centroid = cell.centroid()
+        cell_centroid_local = cell.centroid_local()
         cell_vertices = cell.vertices()
+        cell_vertices_local = cell.vertices_local()
         self.assertListAlmostEqual(pos, cell_pos)
         self.assertListAlmostEqual(centroid, cell_centroid)
+        self.assertListAlmostEqual(centroid_local, cell_centroid_local)
         self.assertNestedListAlmostEqual(vertices, cell_vertices)
+        self.assertNestedListAlmostEqual(vertices_local, cell_vertices_local)
 
 
     def test_methods_data(self):
@@ -144,20 +151,61 @@ class TestCell(TestCase):
 
         self.assert_cubic_cell_basic(cell)
         self.assert_cubic_cell_geo(cell)
-        self.assert_cubic_cell_scale(cell)
+        self.assert_cubic_cell_scaleUnit(cell)
         self.assert_cubic_cell_pos(cell)
+
+    def test_methods_data_offcentered(self):
+        # off centered cube
+        r=0.5
+        c=(1,1,1)
+        cell = self.get_cubic_cell(r,c)
+
+        self.assert_cubic_cell_basic(cell)
+        self.assert_cubic_cell_geo(cell)
+        self.assert_cubic_cell_scaleUnit(cell)
+        self.assert_cubic_cell_pos(cell, 0, r, c)
+
+    def test_methods_data_nonunit(self):
+        # non unit cube
+        r=2
+        c=(1,1,1)
+        cell = self.get_cubic_cell(r,c)
+
+        self.assert_cubic_cell_basic(cell)
+        self.assert_cubic_cell_geo(cell)
+        self.assert_cubic_cell_pos(cell, 0, r, c)
+
+        try:
+            self.assert_cubic_cell_scaleUnit(cell)
+            raise self.failureException("Scale for non unit cube should fail")
+        except: pass
 
     def test_translate(self):
         # unit cube centered at the origin
         cell = self.get_cubic_cell()
 
+        # translate some amount in all direction
         disp = 10
         cell.translate(disp, disp, disp)
-
         self.assert_cubic_cell_basic(cell)
         self.assert_cubic_cell_geo(cell)
-        self.assert_cubic_cell_scale(cell)
+        self.assert_cubic_cell_scaleUnit(cell)
         self.assert_cubic_cell_pos(cell, disp)
+
+        try:
+            self.assert_cubic_cell_pos(cell)
+            raise self.failureException("The cell was translated...")
+        except: pass
+
+        # test negative and each axis
+        cell.translate(-disp, 0, 0)
+        cell.translate(0, -disp, 0)
+        cell.translate(0, 0, -disp)
+        self.assert_cubic_cell_basic(cell)
+        self.assert_cubic_cell_geo(cell)
+        self.assert_cubic_cell_scaleUnit(cell)
+        self.assert_cubic_cell_pos(cell, 0)
+
 
 
 
