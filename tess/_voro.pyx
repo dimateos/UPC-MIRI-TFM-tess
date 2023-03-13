@@ -54,7 +54,8 @@ cdef extern from "voro++.hh" namespace "voro":
         void neighbors(vector[int] &)
 
         # void translate(double,double,double)
-        cbool plane(double,double,double,double d)
+        # cbool plane(double,double,double, double rsq)
+        cbool nplane(double,double,double, double rsq, int p_id)
 
     cdef cppclass c_loop_all:
         c_loop_all(container_base&)
@@ -231,15 +232,21 @@ cdef class Cell:
         self.thisptr.neighbors(v)
         return v
 
+
     def translate(self, x,y,z):
         self.x+= x # all vertices, centroid, etc are given relative to the coordinate system of the particle
         self.y+= y #    which keeps its center at the oiginal particle point
         self.z+= z
         # self.thisptr.translate(x,y,z) # translates only the vertices, plus breaks other methods!
 
-    def plane(self, x,y,z,d):
-        # false when the plane removes the whole volume
-        assert self.thisptr.plane(x,y,z,d)
+
+    def cut_plane(self, x,y,z, rsq, p_id=0):
+        """ Cut the cell by a vector xyz and modulus squared rsq
+            * the cut face will have reference wall id==p_id as neighbour
+            * should be false when the plane removes the whole volume, but seems like it does not! instead it does nothing to the cell
+        """
+        assert self.thisptr.nplane(x,y,z, rsq, p_id)
+
 
 
     def __str__(self):
@@ -258,6 +265,9 @@ cdef class Container:
 
     def __dealloc__(self):
         del self.thisptr
+
+    def point_inside(self, double x, double y, double z):
+        return self.thisptr.point_inside(x, y, z)
 
     def put(self, int n, double x, double y, double z):
         assert self.thisptr.point_inside(x, y, z)
@@ -314,6 +324,9 @@ cdef class ContainerPoly:
 
     def __dealloc__(self):
         del self.thisptr
+
+    def point_inside(self, double x, double y, double z):
+        return self.thisptr.point_inside(x, y, z)
 
     def put(self, int n, double x, double y, double z, double r):
         assert self.thisptr.point_inside(x, y, z)

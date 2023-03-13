@@ -189,6 +189,30 @@ class TestCell(TestCase):
             raise self.failureException("Scale for non unit cube should fail")
         except: pass
 
+    def test_container_bounds(self):
+        r=0.5
+        c=(0,0,0)
+        bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
+
+        # point inside
+        p_out= ( cc+r*0.99 for cc in c )
+        cont = Container(points=[p_out], limits=bb)
+
+        # point outside the bounds
+        p_out= ( cc+r*5 for cc in c )
+        try:
+            cont = Container(points=[p_out], limits=bb)
+            raise self.failureException("Point outside should raise except")
+        except: pass
+
+        # point at the bound
+        p_out= ( cc+r for cc in c )
+        try:
+            cont = Container(points=[p_out], limits=bb)
+            raise self.failureException("Point at the bounds should raise except")
+        except:  pass
+
+
     def test_translate(self):
         # unit cube centered at the origin
         cell = self.get_cubic_cell()
@@ -216,16 +240,19 @@ class TestCell(TestCase):
         self.assert_cubic_cell_pos(cell, 0)
 
 
-    def test_plane_halfY(self):
+    def test_cut_plane_halfY(self):
         # unit cube centered at the origin
         cell = self.get_cubic_cell()
 
         # cut though the middle (remove positive Y halfspace)
-        cell.plane(0,1,0,0)
+        cell.cut_plane(0,1,0,0)
         self.assert_cubic_cell_basic(cell)
 
-        # faces indices may get swapped?, it is the case here
-        # self.assert_cubic_cell_geo(cell)
+        try:
+            # faces indices may get swapped too?, it is the case here
+            self.assert_cubic_cell_geo(cell)
+            raise self.failureException("Some neighbour wall index should be 0 referencing the cut plane")
+        except: pass
 
         try:
             self.assert_cubic_cell_scale(cell)
@@ -260,6 +287,15 @@ class TestCell(TestCase):
         self.assertNestedListAlmostEqual(vertices, cell_vertices)
         self.assertNestedListAlmostEqual(vertices, cell.vertices_local())
 
+    def test_cut_index(self):
+        # unit cube centered at the origin
+        cell = self.get_cubic_cell()
+
+        cell.cut_plane(0,1,0,0)
+        assert 0 in cell.neighbors()
+        cell.cut_plane(1,0,0,0, -10)
+        assert -10 in cell.neighbors()
+        self.assertAlmostEqual(0.25, cell.volume())
 
 
 
