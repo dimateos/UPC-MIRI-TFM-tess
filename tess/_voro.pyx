@@ -324,6 +324,7 @@ cdef class Container:
         )
 
 
+# Same as container but with the addition of variable radii, just duplicate the class for performance
 cdef class ContainerPoly:
     cdef container_poly *thisptr
     def __cinit__(self, double ax_,double bx_,double ay_,double by_,double az_,double bz_,

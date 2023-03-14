@@ -4,9 +4,9 @@ from unittest import TestCase
 # NOTE: there is no vector class imported for the tests, avoid deciding over Blender / numpy vectors / etc
 #       however it is recommended using one instead of working with raw tuples and lists
 
-class TestCell(TestCase):
+class TestCase_ext(TestCase):
+    """" General asserting utilities """
 
-    # General asserting utilities
     def assertListAlmostEqual(self, first, second, places=None, msg=None, delta=None):
         """" Utility function to compare a pair of lists such as a vector """
         self.assertEqual(len(first), len(second), msg=msg)
@@ -21,39 +21,9 @@ class TestCell(TestCase):
             for v1, v2 in zip(l1, l2):
                 self.assertAlmostEqual(v1, v2, places=places, msg=msg, delta=delta)
 
+class TestCase_cubicCell():
+    """" Cubic cell asserting utilities """
 
-    def test_methods(self):
-        """ Simple checks for the Cell method bindings """
-        cell_positions = [[1., 1., 1.], [2., 2., 2.]]
-        cell_radii = [0.2, 0.1]
-
-        cells = Container(
-            cell_positions, radii=cell_radii, limits=(3,3,3), periodic=False
-        )
-
-        for i, cell in enumerate(cells):
-            assert cell.id == i
-            self.assertListAlmostEqual(cell.pos, cell_positions[i])
-            self.assertAlmostEqual(cell.radius, cell_radii[i])
-            assert cell.volume() > 0.0
-            assert cell.max_radius_squared() > 0.0
-            assert cell.total_edge_distance() > 0.0
-            assert cell.surface_area() > 0.0
-            assert cell.number_of_faces() > 0
-            assert cell.number_of_edges() > 0
-            assert len(cell.centroid()) == 3
-            assert len(cell.vertex_orders()) > 0
-            assert len(cell.vertices()) > 0
-            assert len(cell.face_areas()) > 0
-            assert len(cell.face_orders()) > 0
-            assert len(cell.face_freq_table()) > 0
-            assert len(cell.face_vertices()) > 0
-            assert len(cell.face_perimeters()) > 0
-            assert len(cell.normals()) > 0
-            assert len(cell.neighbors()) > 0
-            assert str(cell) == repr(cell) == f"<Cell {i}>"
-
-    # Test cube asserting utilities
     def get_cubic_cell(self, r=0.5, c=(0,0,0)):
         """" return a cubic cell of side r centered at c """
         bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
@@ -146,6 +116,56 @@ class TestCell(TestCase):
         self.assertNestedListAlmostEqual(vertices, cell_vertices)
         self.assertNestedListAlmostEqual(vertices_local, cell_vertices_local)
 
+class TestCase_container():
+    """" Container asserting utilities """
+
+    def get_cubic_cont(self, r=0.5, c=(0,0,0)):
+        """" return a cubic container of side r centered at c """
+        bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
+        cont = Container(points=[c], limits=bb)
+        return cont
+
+    def assert_cubic_cell_geo(self, cont):
+        blocks =               (1, 1, 1)
+        walls =                ((-0.5, -0.5, -0.5), (0.5, 0.5, 0.5))
+
+        cont_blocks = cont.blocks
+        cont_walls = cont.get_walls()
+        self.assertListAlmostEqual(blocks, cont_blocks)
+        self.assertNestedListAlmostEqual(walls, cont_walls)
+
+
+class TestCell(TestCase_ext, TestCase_cubicCell):
+    def test_methods(self):
+        """ Simple checks for the Cell method bindings """
+        cell_positions = [[1., 1., 1.], [2., 2., 2.]]
+        cell_radii = [0.2, 0.1]
+
+        cells = Container(
+            cell_positions, radii=cell_radii, limits=(3,3,3), periodic=False
+        )
+
+        for i, cell in enumerate(cells):
+            assert cell.id == i
+            self.assertListAlmostEqual(cell.pos, cell_positions[i])
+            self.assertAlmostEqual(cell.radius, cell_radii[i])
+            assert cell.volume() > 0.0
+            assert cell.max_radius_squared() > 0.0
+            assert cell.total_edge_distance() > 0.0
+            assert cell.surface_area() > 0.0
+            assert cell.number_of_faces() > 0
+            assert cell.number_of_edges() > 0
+            assert len(cell.centroid()) == 3
+            assert len(cell.vertex_orders()) > 0
+            assert len(cell.vertices()) > 0
+            assert len(cell.face_areas()) > 0
+            assert len(cell.face_orders()) > 0
+            assert len(cell.face_freq_table()) > 0
+            assert len(cell.face_vertices()) > 0
+            assert len(cell.face_perimeters()) > 0
+            assert len(cell.normals()) > 0
+            assert len(cell.neighbors()) > 0
+            assert str(cell) == repr(cell) == f"<Cell {i}>"
 
     def test_methods_data(self):
         # unit cube centered at the origin
@@ -535,3 +555,10 @@ class TestCell(TestCase):
         assert 0 in cell.neighbors()
         cell.cut_plane_particle(0,1,0, -10)
         assert -10 in cell.neighbors()
+
+class TestContainer(TestCase_ext, TestCase_container):
+    def test_methods_data(self):
+        # unit cube centered at the origin
+        cont = self.get_cubic_cont()
+
+        self.assert_cubic_cell_geo(cont)
