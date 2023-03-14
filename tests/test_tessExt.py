@@ -33,8 +33,8 @@ class TestCell(TestCase):
 
         for i, cell in enumerate(cells):
             assert cell.id == i
-            assert np.allclose(cell.pos, cell_positions[i])
-            assert np.isclose(cell.radius, cell_radii[i])
+            self.assertListAlmostEqual(cell.pos, cell_positions[i])
+            self.assertAlmostEqual(cell.radius, cell_radii[i])
             assert cell.volume() > 0.0
             assert cell.max_radius_squared() > 0.0
             assert cell.total_edge_distance() > 0.0
@@ -346,6 +346,12 @@ class TestCell(TestCase):
             cell.cut_plane(0,1,0, d)
             self.assertAlmostEqual(750, cell.volume())
 
+            # NORMALIZED vector cut at NEGATIVE Y=-2.5
+            cell = self.get_cubic_cell(r)
+            d = -2.5
+            cell.cut_plane(0,1,0, d)
+            self.assertAlmostEqual(250, cell.volume())
+
     def test_cut_plane_diagEdge(self):
         def test_common_cut(cell, r):
             try:
@@ -392,6 +398,38 @@ class TestCell(TestCase):
         cell.cut_plane(r2,r2,0, (r2*r2 + r2*r2)) # basically writting manually cell.cut_plane(vx,vy,vz, v.length2)
         test_common_cut(cell, r)
 
+    def test_cut_plane_diagVert(self):
+        # cube with side of length 2 centered at the origin
+        r=1
+
+        # cut out a vert
+        cell = self.get_cubic_cell(r)
+        cell.cut_plane_particle(r,r,r)
+        # self.assert_cubic_cell_geo(cell)
+        self.assertAlmostEqual(7, cell.number_of_faces())
+        self.assertEqual(10, len(cell.vertices()))
+        vol1 = cell.volume()
+
+        # cut out a vert but using the same plane
+        cell = self.get_cubic_cell(r)
+        rsq = r*r + r*r + r*r
+        cell.cut_plane(r,r,r, 0.5 * rsq)
+        self.assertAlmostEqual(7, cell.number_of_faces())
+        self.assertEqual(10, len(cell.vertices()))
+        vol2 = cell.volume()
+        self.assertAlmostEqual(vol1, vol2)
+
+        # cut out in half the volume
+        cell = self.get_cubic_cell(r)
+        cell.cut_plane(r,r,r, 0)
+        # self.assert_cubic_cell_basic(cell)
+        # self.assert_cubic_cell_geo(cell)
+        # self.assert_cubic_cell_scale(cell)
+        # self.assert_cubic_cell_pos(cell)
+        self.assertAlmostEqual(7, cell.number_of_faces())   # bisect of opposite vertices keeps adds a face
+        self.assertEqual(10, len(cell.vertices()))
+        self.assertAlmostEqual(4.0, cell.volume())          # but it does half the volume
+
     def test_cut_plane_index(self):
         # unit cube centered at the origin
         cell = self.get_cubic_cell()
@@ -409,7 +447,7 @@ class TestCell(TestCase):
         cell = self.get_cubic_cell(r)
 
         # set a particle in the middle of the top face
-        cell.cut_plane_particle(0,0.5,0)
+        cell.cut_plane_particle(0,r,0)
 
         try:
             self.assert_cubic_cell_geo(cell)
@@ -428,6 +466,41 @@ class TestCell(TestCase):
             raise self.failureException("Cut volume, so different vertices")
         except:
             self.assertEqual(8, len(cell.vertices()))
+            pass
+
+    def test_cut_particle_octahedron(self):
+        # unit cube centered at the origin
+        r = 2
+        cell = self.get_cubic_cell(r)
+
+        # cut with a particle at each vertex
+        rr = r * 0.5
+        cell.cut_plane_particle(rr,rr,rr)
+        cell.cut_plane_particle(-rr,rr,rr)
+        cell.cut_plane_particle(rr,-rr,rr)
+        cell.cut_plane_particle(-rr,-rr,rr)
+        cell.cut_plane_particle(rr,rr,-rr)
+        cell.cut_plane_particle(-rr,rr,-rr)
+        cell.cut_plane_particle(rr,-rr,-rr)
+        cell.cut_plane_particle(-rr,-rr,-rr)
+
+        try:
+            self.assert_cubic_cell_geo(cell)
+            raise self.failureException("Diff neighbours")
+        except:
+            self.assertAlmostEqual(8.0, cell.number_of_faces())
+            pass
+
+        try:
+            self.assert_cubic_cell_scale(cell, r)
+            raise self.failureException("Less volume")
+        except: pass
+
+        try:
+            self.assert_cubic_cell_pos(cell, 0, r)
+            raise self.failureException("Diff vertices pos etc")
+        except:
+            self.assertEqual(6, len(cell.vertices()))
             pass
 
     def test_cut_particle_exception(self):
