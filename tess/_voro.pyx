@@ -242,20 +242,20 @@ cdef class Cell:
         # self.thisptr.translate(x,y,z) # translates only the vertices, plus breaks other methods!
 
 
-    def cut_plane(self, x,y,z, rsq, p_id=0):
-        """ Cut the cell by a plane defined by a vector xyz and its modulus squared rsq (non-normalized distance)
+    def cut_plane(self, nx,ny,nz, n_lenSq, p_id=0):
+        """ Cut the cell by a plane defined by a normal vector xyz and its modulus squared (non-normalized distance)
             * the cut face will have reference wall id==p_id as neighbour
             * should be false when the plane removes the whole volume, but seems like it does not! instead it does nothing to the cell
         """
         # voro++ forces to cut by particle bisector, so double the distance to force the plane to cut at the expected distance
-        assert self.thisptr.nplane(x,y,z, 2.0*rsq, p_id)
+        assert self.thisptr.nplane(nx,ny,nz, 2.0*n_lenSq, p_id)
 
-    def cut_plane_particle(self, x,y,z, p_id=0):
-        """ Cuts the cell by the plane corresponding to the perpendicular bisector of a particle
+    def cut_plane_particle(self, px,py,pz, p_id=0):
+        """ Cuts the cell by the plane corresponding to the perpendicular bisector of a particle positioned at xyz
             * the cut face will have reference wall id==p_id as neighbour
             * should be false likewise cut_plane, but in this case it is actually trigered by other particles?
         """
-        assert self.thisptr.nplane(x,y,z, p_id)
+        assert self.thisptr.nplane(px,py,pz, p_id)
 
 
     def __str__(self):

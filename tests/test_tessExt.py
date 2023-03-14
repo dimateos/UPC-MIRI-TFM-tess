@@ -281,51 +281,70 @@ class TestCell(TestCase):
         self.assertNestedListAlmostEqual(vertices, cell_vertices)
         self.assertNestedListAlmostEqual(vertices, cell.vertices_local())
 
-    def test_cut_plane_rsqDist(self):
+    def test_cut_plane_atDist(self):
         # cube with side of length 2 centered at the origin
         r=1
         cell = self.get_cubic_cell(r)
 
         # cut though Y=0.5
-        d = 0.5
-        cell.cut_plane(0,d,0, d*d)
-        self.assert_cubic_cell_basic(cell)
-        # self.assert_cubic_cell_geo(cell)
-        # self.assert_cubic_cell_pos(cell, 0, r)
+        if True:
+            d = 0.5
+            cell.cut_plane(0,d,0, d*d)
+            self.assert_cubic_cell_basic(cell)
+            # self.assert_cubic_cell_geo(cell)
+            # self.assert_cubic_cell_pos(cell, 0, r)
 
-        try:
-            self.assert_cubic_cell_scale(cell, r)
-            raise self.failureException("Less volume!")
-        except:
-            self.assertAlmostEqual(6, cell.volume())
-            pass
+            try:
+                self.assert_cubic_cell_scale(cell, r)
+                raise self.failureException("Less volume!")
+            except:
+                self.assertAlmostEqual(6, cell.volume())
+                pass
 
-        # cube with side of length 10 cut at Y=1 leaves 6/10 of the volume
-        r=5
-        cell = self.get_cubic_cell(r)
-        d = 1
-        cell.cut_plane(0,d,0, d*d)
-        # self.assert_cubic_cell_pos(cell, 0, r)
-        # self.assert_cubic_cell_scale(cell, r)
-        self.assertAlmostEqual(600, cell.volume())
+        # cube with side of length 10
+        if True:
+            # cut at Y=1 leaves 6/10 of the volume
+            r=5
+            cell = self.get_cubic_cell(r)
+            d = 1
+            cell.cut_plane(0,d,0, d*d)
+            # self.assert_cubic_cell_pos(cell, 0, r)
+            # self.assert_cubic_cell_scale(cell, r)
+            self.assertAlmostEqual(600, cell.volume())
 
-        # cut at Y=2 leaves 7/10 of the volume
-        cell = self.get_cubic_cell(r)
-        d = 2
-        cell.cut_plane(0,d,0, d*d)
-        self.assertAlmostEqual(700, cell.volume())
+            # cut at Y=2 leaves 7/10 of the volume
+            cell = self.get_cubic_cell(r)
+            d = 2
+            cell.cut_plane(0,d,0, d*d)
+            self.assertAlmostEqual(700, cell.volume())
 
-        # cut at Y=3 leaves 8/10 of the volume
-        cell = self.get_cubic_cell(r)
-        d = 3
-        cell.cut_plane(0,d,0, d*d)
-        self.assertAlmostEqual(800, cell.volume())
+            # cut at Y=3 leaves 8/10 of the volume
+            cell = self.get_cubic_cell(r)
+            d = 3
+            cell.cut_plane(0,d,0, d*d)
+            self.assertAlmostEqual(800, cell.volume())
 
-        # normalized vector cut at Y=2.5
-        cell = self.get_cubic_cell(r)
-        d = 2.5
-        cell.cut_plane(0,1,0, d*d)
-        self.assertAlmostEqual(750, cell.volume())
+        # cut at a controlled distance, not just the tip of the vector
+        if True:
+            # cut at Y=2.5 by reducing vector lenSq dist
+            cell = self.get_cubic_cell(r)
+            d = 5
+            cell.cut_plane(0,d,0, d*d *0.5)
+            self.assertAlmostEqual(750, cell.volume())
+
+            # cut at Y=4 by augmenting vector lenSq dist
+            cell = self.get_cubic_cell(r)
+            d = 2
+            cell.cut_plane(0,d,0, d*d *2.0)
+            self.assertAlmostEqual(900, cell.volume())
+
+            # NORMALIZED vector cut at Y=2.5
+            # NOTE: the API of cut_plane is confusing, will probably change n_lenSq to distance relative to normal length
+            #       e.g. that is the case of n being a normalized vector, otherwise the user has to pass the lenSq
+            cell = self.get_cubic_cell(r)
+            d = 2.5
+            cell.cut_plane(0,1,0, d)
+            self.assertAlmostEqual(750, cell.volume())
 
     def test_cut_plane_diagEdge(self):
         def test_common_cut(cell, r):
