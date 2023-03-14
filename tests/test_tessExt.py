@@ -1,14 +1,8 @@
 from tess import Container
 from unittest import TestCase
 
-from math import sqrt
-import numpy as np
-
-try:
-    import scipy
-except ImportError:
-    scipy = None
-
+# NOTE: there is no vector class imported for the tests, avoid deciding over Blender / numpy vectors / etc
+#       however it is recommended using one instead of working with raw tuples and lists
 
 class TestCell(TestCase):
 
@@ -287,7 +281,99 @@ class TestCell(TestCase):
         self.assertNestedListAlmostEqual(vertices, cell_vertices)
         self.assertNestedListAlmostEqual(vertices, cell.vertices_local())
 
-    def test_cut_index(self):
+    def test_cut_plane_rsqDist(self):
+        # cube with side of length 2 centered at the origin
+        r=1
+        cell = self.get_cubic_cell(r)
+
+        # cut though Y=0.5
+        d = 0.5
+        cell.cut_plane(0,d,0, d*d)
+        self.assert_cubic_cell_basic(cell)
+        # self.assert_cubic_cell_geo(cell)
+        # self.assert_cubic_cell_pos(cell, 0, r)
+
+        try:
+            self.assert_cubic_cell_scale(cell, r)
+            raise self.failureException("Less volume!")
+        except:
+            self.assertAlmostEqual(6, cell.volume())
+            pass
+
+        # cube with side of length 10 cut at Y=1 leaves 6/10 of the volume
+        r=5
+        cell = self.get_cubic_cell(r)
+        d = 1
+        cell.cut_plane(0,d,0, d*d)
+        # self.assert_cubic_cell_pos(cell, 0, r)
+        # self.assert_cubic_cell_scale(cell, r)
+        self.assertAlmostEqual(600, cell.volume())
+
+        # cut at Y=2 leaves 7/10 of the volume
+        cell = self.get_cubic_cell(r)
+        d = 2
+        cell.cut_plane(0,d,0, d*d)
+        self.assertAlmostEqual(700, cell.volume())
+
+        # cut at Y=3 leaves 8/10 of the volume
+        cell = self.get_cubic_cell(r)
+        d = 3
+        cell.cut_plane(0,d,0, d*d)
+        self.assertAlmostEqual(800, cell.volume())
+
+        # normalized vector cut at Y=2.5
+        cell = self.get_cubic_cell(r)
+        d = 2.5
+        cell.cut_plane(0,1,0, d*d)
+        self.assertAlmostEqual(750, cell.volume())
+
+    def test_cut_plane_diagEdge(self):
+        def test_common_cut(cell, r):
+            try:
+                self.assert_cubic_cell_geo(cell)
+                raise self.failureException("Adittional face, etc")
+            except:
+                self.assertAlmostEqual(7, cell.number_of_faces())
+                pass
+
+            try:
+                self.assert_cubic_cell_scale(cell, r)
+                raise self.failureException("Cut a corner, so less volume etc")
+            except:
+                self.assertAlmostEqual(7 * r*r*r, cell.volume())
+                pass
+
+            try:
+                self.assert_cubic_cell_pos(cell, 0, r)
+                raise self.failureException("Cut a corner, so different vertices")
+            except:
+                self.assertEqual(10, len(cell.vertices()))
+                pass
+
+        # cube with side of length 2 centered at the origin
+        r=1
+        cell = self.get_cubic_cell(r)
+        # remove one edge of the cell with a single plane cut using a particle positioned at the edge
+        cell.cut_plane_particle(r,r,0)
+        test_common_cut(cell, r)
+        # equivalent cut at half the distance to the edge
+        cell = self.get_cubic_cell(r)
+        cell.cut_plane(r,r,0, 0.5 * (r*r + r*r))
+        test_common_cut(cell, r)
+
+        # same but with cube with side of length 20 centered at the origin
+        r=10
+        cell = self.get_cubic_cell(r)
+        cell.cut_plane_particle(r,r,0)
+        test_common_cut(cell, r)
+        cell = self.get_cubic_cell(r)
+        # cell.cut_plane(r,r,0, 0.5 * (r*r + r*r))
+        # rsq is the modulus of the vector, so careful when not normalizing (should be working with a vector class)
+        r2 = r * 0.5
+        cell.cut_plane(r2,r2,0, (r2*r2 + r2*r2)) # basically writting manually cell.cut_plane(vx,vy,vz, v.length2)
+        test_common_cut(cell, r)
+
+    def test_cut_plane_index(self):
         # unit cube centered at the origin
         cell = self.get_cubic_cell()
 

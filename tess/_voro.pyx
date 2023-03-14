@@ -243,11 +243,12 @@ cdef class Cell:
 
 
     def cut_plane(self, x,y,z, rsq, p_id=0):
-        """ Cut the cell by a vector xyz and modulus squared rsq
+        """ Cut the cell by a plane defined by a vector xyz and its modulus squared rsq (non-normalized distance)
             * the cut face will have reference wall id==p_id as neighbour
             * should be false when the plane removes the whole volume, but seems like it does not! instead it does nothing to the cell
         """
-        assert self.thisptr.nplane(x,y,z, rsq, p_id)
+        # voro++ forces to cut by particle bisector, so double the distance to force the plane to cut at the expected distance
+        assert self.thisptr.nplane(x,y,z, 2.0*rsq, p_id)
 
     def cut_plane_particle(self, x,y,z, p_id=0):
         """ Cuts the cell by the plane corresponding to the perpendicular bisector of a particle
