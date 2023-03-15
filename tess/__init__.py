@@ -19,8 +19,10 @@ Example
 
 from ._voro import Container as _Container, ContainerPoly as _ContainerPoly, Cell
 
+# annotation helps autocomplete (python>=3.9 already has packs them for all built-ins)
+from typing import List
 
-class Container(list):
+class Container(list[Cell]):
     r"""A container (`list`) of Voronoi cells.
 
     This is the main entry point into the :mod:`tess` module. After creation, this will be a `list`
@@ -203,7 +205,7 @@ class Container(list):
                         )
                     )
 
-        cells = self._container.get_cells()
+        cells: List[Cell] = self._container.get_cells()
         list.__init__(self, cells)
 
         # Sometimes a _Container has calculation issues. That can lead to the following.
