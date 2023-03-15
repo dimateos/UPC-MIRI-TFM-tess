@@ -334,11 +334,11 @@ class TestBoundaries(TestCase):
         ]
 
         c = Container(points, limits=limits, periodic=False)
-        w1, w2 = c.get_walls()
+        w1, w2 = c.get_limits()
         self.assertListAlmostEqual(limits[0], w1)
         self.assertListAlmostEqual(limits[1], w2)
 
         c = Container(points, limits=limits, radii=[0.1] * len(points), periodic=False)
-        w1, w2 = c.get_walls()
+        w1, w2 = c.get_limits()
         self.assertListAlmostEqual(limits[0], w1)
         self.assertListAlmostEqual(limits[1], w2)

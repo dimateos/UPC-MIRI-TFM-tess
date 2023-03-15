@@ -215,7 +215,7 @@ You may want to check that all points are within the box, and none are overlappi
                 )
             )
 
-    def get_walls(self):
+    def get_limits(self):
         """
         Get the size of the box.
 
@@ -224,7 +224,7 @@ You may want to check that all points are within the box, and none are overlappi
         limits : two 3-tuples of float
             The (x,y,z) coordinates of the "near" and "far" corner of the box.
         """
-        return self._container.get_walls()
+        return self._container.get_limits()
 
     def _get_bond_normals(self):
         """Returns a generator of [(dx,dy,dz,A) for each bond] for each cell.

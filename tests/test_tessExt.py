@@ -127,12 +127,12 @@ class TestCase_container():
 
     def assert_cubic_cell_geo(self, cont):
         blocks =               (1, 1, 1)
-        walls =                ((-0.5, -0.5, -0.5), (0.5, 0.5, 0.5))
+        limits =               ((-0.5, -0.5, -0.5), (0.5, 0.5, 0.5))
 
         cont_blocks = cont.blocks
-        cont_walls = cont.get_walls()
+        cont_limits = cont.get_limits()
         self.assertListAlmostEqual(blocks, cont_blocks)
-        self.assertNestedListAlmostEqual(walls, cont_walls)
+        self.assertNestedListAlmostEqual(limits, cont_limits)
 
 
 class TestCell(TestCase_ext, TestCase_cubicCell):

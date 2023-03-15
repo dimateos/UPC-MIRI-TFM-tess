@@ -317,7 +317,7 @@ cdef class Container:
             raise ValueError("Computation failed")
         return mylist
 
-    def get_walls(self):
+    def get_limits(self):
         return (
             (self.thisptr.ax, self.thisptr.ay, self.thisptr.az),
             (self.thisptr.bx, self.thisptr.by, self.thisptr.bz),
@@ -374,7 +374,7 @@ cdef class ContainerPoly:
             raise ValueError("Computation failed")
         return mylist
 
-    def get_walls(self):
+    def get_limits(self):
         return (
             (self.thisptr.ax, self.thisptr.ay, self.thisptr.az),
             (self.thisptr.bx, self.thisptr.by, self.thisptr.bz),
