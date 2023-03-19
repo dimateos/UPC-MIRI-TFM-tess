@@ -559,6 +559,24 @@ class TestContainer(TestCase_ext, TestCase_container):
         assert -10 in cell.neighbors()
         assert -11 in cell.neighbors()
 
+    def test_wall_basic_redundant(self):
+        # atm the walls must be defined before constructing the container
+        walls = [ (0,1,0, 0.250005), (0,1,0, 0.25) ]
+        cell = self.get_cubic_cont(walls=walls)[0]
+
+        # the wall id should be the one from the closer plane
+        assert -11 in cell.neighbors()
+        self.assertAlmostEqual(cell.volume(), 0.75)
+
+    def test_wall_basic_duplicated(self):
+        # atm the walls must be defined before constructing the container
+        walls = [ (0,1,0, 0.25), (0,1,0, 0.25) ]
+        cell = self.get_cubic_cont(walls=walls)[0]
+
+        # the wall id of repeated walls should be the last added?
+        assert -11 in cell.neighbors()
+        self.assertAlmostEqual(cell.volume(), 0.75)
+
     def test_wall_basic_offcenter(self):
         # atm the walls must be defined before constructing the container
         walls = [ (0,1,0, 0) ]
@@ -601,3 +619,16 @@ class TestContainer(TestCase_ext, TestCase_container):
         cell_volume = cell.volume()
         self.assertAlmostEqual(volume, cell_volume)
         assert -10 in cell.neighbors()
+
+    def test_wall_nonNormal(self):
+        # atm the walls must be defined before constructing the container
+        cell = self.get_cubic_cont(walls=[ (0,1,0, 0.1) ])[0]
+        self.assertAlmostEqual(cell.volume(), 0.6)
+
+        # the displacement gets normalized by the vector length
+        # NOTE: other sensible option would be displace relative to the length
+        cell = self.get_cubic_cont(walls=[ (0,2,0, 0.1) ])[0]
+        self.assertAlmostEqual(cell.volume(), 0.55)
+        cell = self.get_cubic_cont(walls=[ (0,10,0, 0.1) ])[0]
+        self.assertAlmostEqual(cell.volume(), 0.51)
+
