@@ -299,6 +299,11 @@ cdef class Container:
         assert self.thisptr.put(n, x, y, z)
 
     def add_wall(self, double xc_, double yc_, double zc_, double ac_, int w_id_=-10):
+        """ * (xc_,yc_,zc_) a normal vector to the plane, the positive halfspace is removed.
+            * ac_ a displacement along the normal vector, negative values will still remove positive halfspace.
+            * w_id_ an ID number to associate with the wall for neighbor tracking, under -10 (some reserved id)
+            * NOTE: a point ON a wall WONT be put into the container, and will FAIL an ASSERTION atm!
+        """
         # only negative id, and over -6 reserved for bounding box walls -> -10 for rounding
         assert w_id_ <= -10
 
@@ -370,6 +375,11 @@ cdef class ContainerPoly:
         assert self.thisptr.put(n,x,y,z,r)
 
     def add_wall(self, double xc_, double yc_, double zc_, double ac_, int w_id_=-10):
+        """ * (xc_,yc_,zc_) a normal vector to the plane, the positive halfspace is removed.
+            * ac_ a displacement along the normal vector, negative values will still remove positive halfspace.
+            * w_id_ an ID number to associate with the wall for neighbor tracking, under -10 (some reserved id)
+            * NOTE: a point ON a wall WONT be put into the container, and will FAIL an ASSERTION atm!
+        """
         # only negative id, and over -6 reserved for bounding box walls -> -10 for rounding
         assert w_id_ <= -10
 

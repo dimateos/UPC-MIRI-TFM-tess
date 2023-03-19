@@ -208,16 +208,16 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         c=(0,0,0)
         bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
 
-        # point inside
+        # point INSIDE
         p_out= ( cc+r*0.99 for cc in c )
         cont = Container(points=[p_out], limits=bb)
 
-        # point outside should raise except for now
+        # point OUTSIDE should raise except for now (maybe change with walls?)
         p_out= ( cc+r*5 for cc in c )
         with assertException(Exception):
             cont = Container(points=[p_out], limits=bb)
 
-        # point outside should raise except for now
+        # point ON the boundary should raise except for now
         p_out= ( cc+r for cc in c )
         with assertException(Exception):
             cont = Container(points=[p_out], limits=bb)
@@ -546,7 +546,7 @@ class TestContainer(TestCase_ext, TestCase_container):
         self.assertAlmostEqual(volume, cell_volume)
         assert -10 in cell.neighbors()
 
-    def test_wall_basic_double(self):
+    def test_wall_basic_multiple(self):
         # atm the walls must be defined before constructing the container
         walls = [ (0,1,0, 0.25), (0,-1,0, 0.25) ]
         cont = self.get_cubic_cont(walls=walls)
@@ -558,3 +558,46 @@ class TestContainer(TestCase_ext, TestCase_container):
         self.assertAlmostEqual(volume, cell_volume)
         assert -10 in cell.neighbors()
         assert -11 in cell.neighbors()
+
+    def test_wall_basic_offcenter(self):
+        # atm the walls must be defined before constructing the container
+        walls = [ (0,1,0, 0) ]
+        r=0.5
+        c=(0,0,0)
+        p=(0, -0.25, 0)
+        bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
+
+        # cubic container but insert the point offcentered
+        cont = Container(points=[p], limits=bb, walls=walls)
+
+        # check the wall set limited the volume
+        cell = cont[0]
+        volume = 0.5
+        cell_volume = cell.volume()
+        self.assertAlmostEqual(volume, cell_volume)
+        assert -10 in cell.neighbors()
+
+    def test_wall_basic_onWall(self):
+        # atm the walls must be defined before constructing the container
+        walls = [ (0,1,0, 0) ]
+
+        # the plane goes through the center so the default point is touching
+        with assertException(Exception):
+            cont = self.get_cubic_cont(walls=walls)
+
+    def test_wall_basic_negative(self):
+        # atm the walls must be defined before constructing the container
+        walls = [ (0,1,0, -0.25) ]
+        r=0.5
+        c=(0,0,0)
+        p=(0, -0.4, 0)
+        bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
+
+        cont = Container(points=[p], limits=bb, walls=walls)
+
+        # negative distance, but positive normal so only left the bottom 1/4
+        cell = cont[0]
+        volume = 0.25
+        cell_volume = cell.volume()
+        self.assertAlmostEqual(volume, cell_volume)
+        assert -10 in cell.neighbors()
