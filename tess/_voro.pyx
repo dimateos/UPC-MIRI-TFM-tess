@@ -11,6 +11,12 @@ from cython.operator cimport dereference
 
 cdef extern from "voro++.hh" namespace "voro":
     cdef cppclass container_base:
+        # declared but derived classes not actually deriving
+        # atm repeating the declaration of total_particles, add_wall...
+        pass
+
+    cdef cppclass wall:
+        # same as container_base, atm wall_plane not actually derived from this
         pass
 
     cdef cppclass container:
@@ -20,7 +26,10 @@ cdef extern from "voro++.hh" namespace "voro":
         cbool compute_cell(voronoicell_neighbor &c,c_loop_all &vl)
         cbool point_inside(double,double,double)
         cbool put(int, double, double, double)
+
         int total_particles()
+        # void add_wall(wall &w)
+        void add_wall(wall *w)
 
     cdef cppclass container_poly:
         double ax, ay, az, bx, by, bz
@@ -29,7 +38,10 @@ cdef extern from "voro++.hh" namespace "voro":
         cbool compute_cell(voronoicell_neighbor &c, c_loop_all &vl)
         cbool point_inside(double,double,double)
         cbool put(int, double, double, double, double)
+
         int total_particles()
+        # void add_wall(wall &w)
+        void add_wall(wall *w)
 
 
     cdef cppclass voronoicell_neighbor:
@@ -67,6 +79,10 @@ cdef extern from "voro++.hh" namespace "voro":
         void pos(double &x, double &y, double &z)
         void pos(int &pid, double &x, double &y, double &z, double &r)
 
+    cdef cppclass wall_plane:
+        int w_id
+        double xc, yc, zc, ac
+        wall_plane(double xc, double yc, double zc, double ac, int w_id)
 
 cdef class Cell:
     """A basic voronoi cell, usually created by :class:`Container`.
@@ -282,6 +298,17 @@ cdef class Container:
         assert self.thisptr.point_inside(x, y, z)
         assert self.thisptr.put(n, x, y, z)
 
+    def add_wall(self, double xc_, double yc_, double zc_, double ac_, int w_id_=-10):
+        # only negative id, and over -6 reserved for bounding box walls -> -10 for rounding
+        assert w_id_ <= -10
+
+        # atm no inheritance?
+        cdef wall_plane *wall_ptr = new wall_plane(xc_, yc_, zc_, ac_, w_id_)
+        cdef wall *wall_baseptr = (<wall *>(wall_ptr))
+
+        self.thisptr.add_wall(wall_baseptr)
+        pass
+
     def get_cells(self):
         cdef container_base *baseptr = (<container_base *>(self.thisptr))
         cdef c_loop_all *vl = new c_loop_all(dereference(baseptr))
@@ -341,6 +368,16 @@ cdef class ContainerPoly:
     def put(self, int n, double x, double y, double z, double r):
         assert self.thisptr.point_inside(x, y, z)
         assert self.thisptr.put(n,x,y,z,r)
+
+    def add_wall(self, double xc_, double yc_, double zc_, double ac_, int w_id_=-10):
+        # only negative id, and over -6 reserved for bounding box walls -> -10 for rounding
+        assert w_id_ <= -10
+
+        # atm no inheritance, so repeat code?
+        cdef wall_plane *wall_ptr = new wall_plane(xc_, yc_, zc_, ac_, w_id_)
+        cdef wall *wall_baseptr = (<wall *>(wall_ptr))
+
+        self.thisptr.add_wall(wall_baseptr)
 
     def get_cells(self):
         cdef container_base *baseptr = (<container_base *>(self.thisptr))

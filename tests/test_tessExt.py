@@ -119,10 +119,10 @@ class TestCase_cubicCell():
 class TestCase_container():
     """" Container asserting utilities """
 
-    def get_cubic_cont(self, r=0.5, c=(0,0,0)):
+    def get_cubic_cont(self, r=0.5, c=(0,0,0), walls=[]):
         """" return a cubic container of side r centered at c """
         bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
-        cont = Container(points=[c], limits=bb)
+        cont = Container(points=[c], limits=bb, walls=walls)
         return cont
 
     def assert_cubic_cell_geo(self, cont):
@@ -562,3 +562,28 @@ class TestContainer(TestCase_ext, TestCase_container):
         cont = self.get_cubic_cont()
 
         self.assert_cubic_cell_geo(cont)
+
+    def test_wall_basic(self):
+        # atm the walls must be defined before constructing the container
+        walls = [ (0,1,0, 0.25) ]
+        cont = self.get_cubic_cont(walls=walls)
+
+        # check the wall set limited the volume
+        cell = cont[0]
+        volume = 0.75
+        cell_volume = cell.volume()
+        self.assertAlmostEqual(volume, cell_volume)
+        assert -10 in cell.neighbors()
+
+    def test_wall_basic_double(self):
+        # atm the walls must be defined before constructing the container
+        walls = [ (0,1,0, 0.25), (0,-1,0, 0.25) ]
+        cont = self.get_cubic_cont(walls=walls)
+
+        # check the wall set limited the volume
+        cell = cont[0]
+        volume = 0.5
+        cell_volume = cell.volume()
+        self.assertAlmostEqual(volume, cell_volume)
+        assert -10 in cell.neighbors()
+        assert -11 in cell.neighbors()

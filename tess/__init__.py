@@ -75,7 +75,7 @@ class Container(list[Cell]):
         R_{j}^{2}\forall j\neq i
     """
 
-    def __init__(self, points, limits=1.0, periodic=False, radii=None, blocks=None):
+    def __init__(self, points, limits=1.0, periodic=False, radii=None, blocks=None, walls=None):
         """Get the voronoi cells for a given set of points."""
         # make px, py, pz from periodic, whether periodic is a 3-tuple or bool
         try:
@@ -159,6 +159,11 @@ class Container(list[Cell]):
                 8,   # the initial memory allocation for each block
             )
 
+            # Additional container walls passed a list of 4D tuples for plane specification
+            if walls:
+                for n, (x, y, z, a) in enumerate(walls):
+                    self._container.add_wall(x, y, z, a, -10-n)
+
             for n, (x, y, z), r in zip(range(len(points)), points, radii):
                 try:
                     rx, ry, rz = (
@@ -190,6 +195,12 @@ class Container(list[Cell]):
                 pz,  # periodicity
                 8,   # the initial memory allocation for each block
             )
+
+            # Additional container walls passed a list of 4D tuples for plane specification
+            if walls:
+                for n, (x, y, z, a) in enumerate(walls):
+                    self._container.add_wall(x, y, z, a, -10-n)
+
             for n, (x, y, z) in enumerate(points):
                 rx, ry, rz = (
                     roundedoff(x, lx0, Lx, px),
