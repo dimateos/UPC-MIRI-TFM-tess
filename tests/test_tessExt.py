@@ -1,5 +1,6 @@
 from tess import Container
 from unittest import TestCase
+from pytest import raises as assertException
 
 # NOTE: there is no vector class imported for the tests, avoid deciding over Blender / numpy vectors / etc
 #       however it is recommended using one instead of working with raw tuples and lists
@@ -198,10 +199,9 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         self.assert_cubic_cell_pos(cell, 0, r, c)
         self.assert_cubic_cell_scale(cell, r)
 
-        try:
+        # Scale for non unit cube should fail
+        with assertException(Exception):
             self.assert_cubic_cell_scale(cell)
-            raise self.failureException("Scale for non unit cube should fail")
-        except: pass
 
     def test_container_bounds(self):
         r=0.5
@@ -212,19 +212,15 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         p_out= ( cc+r*0.99 for cc in c )
         cont = Container(points=[p_out], limits=bb)
 
-        # point outside the bounds
+        # point outside should raise except for now
         p_out= ( cc+r*5 for cc in c )
-        try:
+        with assertException(Exception):
             cont = Container(points=[p_out], limits=bb)
-            raise self.failureException("Point outside should raise except")
-        except: pass
 
-        # point at the bound
+        # point outside should raise except for now
         p_out= ( cc+r for cc in c )
-        try:
+        with assertException(Exception):
             cont = Container(points=[p_out], limits=bb)
-            raise self.failureException("Point at the bounds should raise except")
-        except:  pass
 
 
     def test_translate(self):
@@ -239,10 +235,9 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         self.assert_cubic_cell_scale(cell)
         self.assert_cubic_cell_pos(cell, disp)
 
-        try:
+        # cell was translated so original pos test should fail
+        with assertException(Exception):
             self.assert_cubic_cell_pos(cell)
-            raise self.failureException("The cell was translated...")
-        except: pass
 
         # test negative and each axis
         cell.translate(-disp, 0, 0)
@@ -262,20 +257,18 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         cell.cut_plane(0,1,0,0)
         self.assert_cubic_cell_basic(cell)
 
-        try:
-            # faces indices may get swapped too?, it is the case here
+        # some neighbour wall index should be 0 referencing the cut plane
+        # faces indices may get swapped too?, it is the case here
+        with assertException(Exception):
             self.assert_cubic_cell_geo(cell)
-            raise self.failureException("Some neighbour wall index should be 0 referencing the cut plane")
-        except: pass
 
-        try:
+        # cut so should have half the volume etc
+        with assertException(Exception):
             self.assert_cubic_cell_scale(cell)
-            raise self.failureException("Cut so should have half the volume etc")
-        except: pass
-        try:
+
+        # cut so should have shifted centroid and non positive Y vertices
+        with assertException(Exception):
             self.assert_cubic_cell_pos(cell)
-            raise self.failureException("Cut so should have shifted centroid and non positive Y vertices")
-        except: pass
 
         # check proper magnitudes (some)
         volume =               0.5
@@ -314,12 +307,9 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
             # self.assert_cubic_cell_geo(cell)
             # self.assert_cubic_cell_pos(cell, 0, r)
 
-            try:
+            self.assertAlmostEqual(6, cell.volume())
+            with assertException(Exception):
                 self.assert_cubic_cell_scale(cell, r)
-                raise self.failureException("Less volume!")
-            except:
-                self.assertAlmostEqual(6, cell.volume())
-                pass
 
         # cube with side of length 10
         if True:
@@ -374,26 +364,21 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
 
     def test_cut_plane_diagEdge(self):
         def test_common_cut(cell, r):
-            try:
+
+            # additional face
+            self.assertAlmostEqual(7, cell.number_of_faces())
+            with assertException(Exception):
                 self.assert_cubic_cell_geo(cell)
-                raise self.failureException("Adittional face, etc")
-            except:
-                self.assertAlmostEqual(7, cell.number_of_faces())
-                pass
 
-            try:
+            # Cut a corner, so less volume etc
+            self.assertAlmostEqual(7 * r*r*r, cell.volume())
+            with assertException(Exception):
                 self.assert_cubic_cell_scale(cell, r)
-                raise self.failureException("Cut a corner, so less volume etc")
-            except:
-                self.assertAlmostEqual(7 * r*r*r, cell.volume())
-                pass
 
-            try:
+            # Cut a corner, so different vertices
+            self.assertEqual(10, len(cell.vertices()))
+            with assertException(Exception):
                 self.assert_cubic_cell_pos(cell, 0, r)
-                raise self.failureException("Cut a corner, so different vertices")
-            except:
-                self.assertEqual(10, len(cell.vertices()))
-                pass
 
         # cube with side of length 2 centered at the origin
         r=1
@@ -469,24 +454,17 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         # set a particle in the middle of the top face
         cell.cut_plane_particle(0,r,0)
 
-        try:
+        # diff neighborhood
+        with assertException(Exception):
             self.assert_cubic_cell_geo(cell)
-            raise self.failureException("Diff neighbours")
-        except: pass
 
-        try:
+        self.assertAlmostEqual(0.75, cell.volume())
+        with assertException(Exception):
             self.assert_cubic_cell_scale(cell, r)
-            raise self.failureException("Cut volume")
-        except:
-            self.assertAlmostEqual(0.75, cell.volume())
-            pass
 
-        try:
+        self.assertEqual(8, len(cell.vertices()))
+        with assertException(Exception):
             self.assert_cubic_cell_pos(cell, 0, r)
-            raise self.failureException("Cut volume, so different vertices")
-        except:
-            self.assertEqual(8, len(cell.vertices()))
-            pass
 
     def test_cut_particle_octahedron(self):
         # unit cube centered at the origin
@@ -504,24 +482,17 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         cell.cut_plane_particle(rr,-rr,-rr)
         cell.cut_plane_particle(-rr,-rr,-rr)
 
-        try:
+        self.assertAlmostEqual(8.0, cell.number_of_faces())
+        with assertException(Exception):
             self.assert_cubic_cell_geo(cell)
-            raise self.failureException("Diff neighbours")
-        except:
-            self.assertAlmostEqual(8.0, cell.number_of_faces())
-            pass
 
-        try:
+        self.assertLess(cell.volume(), 8)
+        with assertException(Exception):
             self.assert_cubic_cell_scale(cell, r)
-            raise self.failureException("Less volume")
-        except: pass
 
-        try:
+        self.assertEqual(6, len(cell.vertices()))
+        with assertException(Exception):
             self.assert_cubic_cell_pos(cell, 0, r)
-            raise self.failureException("Diff vertices pos etc")
-        except:
-            self.assertEqual(6, len(cell.vertices()))
-            pass
 
     def test_cut_particle_exception(self):
         # unit cube centered at the origin
