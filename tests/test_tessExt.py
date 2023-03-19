@@ -632,3 +632,55 @@ class TestContainer(TestCase_ext, TestCase_container):
         cell = self.get_cubic_cont(walls=[ (0,10,0, 0.1) ])[0]
         self.assertAlmostEqual(cell.volume(), 0.51)
 
+    def test_wall_diag(self):
+        # atm the walls must be defined before constructing the container
+        walls = [ (1,1,0, 0) ]
+        r=0.5
+        c=(0,0,0)
+        p=(0, -0.25, 0)
+        bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
+        cell = Container(points=[p], limits=bb, walls=walls)[0]
+
+        # XY plane should cut in half
+        self.assertAlmostEqual(cell.volume(), 0.5)
+
+        # try a point outside
+        p=(0, 0.25, 0)
+        with assertException(Exception):
+            cell = Container(points=[p], limits=bb, walls=walls)[0]
+
+        # try inverser normals
+        walls = [ (-1,-1,0, 0) ]
+        p=(0, 0.25, 0)
+        cell = Container(points=[p], limits=bb, walls=walls)[0]
+        self.assertAlmostEqual(cell.volume(), 0.5)
+
+        # try offset from center + point in the center
+        walls = [ (1,1,0, 0.2), (1,1,0, 0.1) ]
+        p=c
+        cell = Container(points=[p], limits=bb, walls=walls)[0]
+        # the id should be the closest plane
+        assert -11 in cell.neighbors()
+
+    def test_wall_tetra(self):
+        # atm the walls must be defined before constructing the container
+        walls = []
+        # add four plane walls to the container to make a tetrahedron
+        walls += [(1,1,1,1)]
+        walls += [(-1,-1,1,1)]
+        walls += [(1,-1,-1,1)]
+        walls += [(-1,1,-1,1)]
+
+        cont = self.get_cubic_cont(r=1, walls=walls)
+
+        # check walls
+        cell = cont[0]
+        assert -10 in cell.neighbors()
+        assert -11 in cell.neighbors()
+        assert -12 in cell.neighbors()
+        assert -13 in cell.neighbors()
+
+        # 3 tetrahedra fit inside the cube (2 being cut in half), this is the middle full one
+        volume = 8 / 3.0
+        cell_volume = cell.volume()
+        self.assertAlmostEqual(volume, cell_volume)
