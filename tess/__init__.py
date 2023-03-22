@@ -75,6 +75,30 @@ class Container(list[Cell]):
         R_{j}^{2}\forall j\neq i
     """
 
+    # Info of neighbouring information referencing container walls
+    limits_walls_startID = -1
+    """ Neighbours reference internal container limits walls with negative id """
+    limits_walls_amountID = 6
+    """ Axis aligned contianers have 6 walls
+        * NOTE: not sure if this is correct for periodic containers tho
+    """
+    custom_walls_startID = -10
+    """ Custom walls start at -10 instead of -7 to help readability
+        * NOTE: Could be set as constant inside .pyx
+    """
+
+    @staticmethod
+    def get_limits_walls():
+        """ Get a map from the negative id of the wall to a tuple containing its normal """
+        return {
+            -1: (-1,  0,  0),
+            -2: ( 1,  0,  0),
+            -3: ( 0, -1,  0),
+            -4: ( 0,  1,  0),
+            -5: ( 0,  0, -1),
+            -6: ( 0,  0,  1),
+        }
+
     def __init__(self, points, limits=1.0, periodic=False, radii=None, blocks=None, walls=None):
         """Get the voronoi cells for a given set of points."""
         # make px, py, pz from periodic, whether periodic is a 3-tuple or bool
@@ -162,7 +186,7 @@ class Container(list[Cell]):
             # Additional container walls passed a list of 4D tuples for plane specification
             if walls:
                 for n, (x, y, z, a) in enumerate(walls):
-                    self._container.add_wall(x, y, z, a, -10-n)
+                    self._container.add_wall(x, y, z, a, Container.custom_walls_startID-n)
 
             for n, (x, y, z), r in zip(range(len(points)), points, radii):
                 try:
@@ -199,7 +223,7 @@ class Container(list[Cell]):
             # Additional container walls passed a list of 4D tuples for plane specification
             if walls:
                 for n, (x, y, z, a) in enumerate(walls):
-                    self._container.add_wall(x, y, z, a, -10-n)
+                    self._container.add_wall(x, y, z, a, Container.custom_walls_startID-n)
 
             for n, (x, y, z) in enumerate(points):
                 rx, ry, rz = (
@@ -230,16 +254,16 @@ You may want to check that all points are within the box, and none are overlappi
 
     def get_limits(self):
         """
-        Get the size of the box.
+        Get the bounding box min/max.
 
         Returns
         -------
         limits : two 3-tuples of float
-            The (x,y,z) coordinates of the "near" and "far" corner of the box.
+            The (x,y,z) coordinates of the min/max corners of the box.
         """
         return self._container.get_limits()
 
-    def _get_bond_normals(self):
+    def get_bond_normals(self):
         """Returns a generator of [(dx,dy,dz,A) for each bond] for each cell.
 
         (dx,dy,dz) is the normal, and A is the area of the voronoi face."""
@@ -300,7 +324,7 @@ You may want to check that all points are within the box, and none are overlappi
         """
         import numpy as np
 
-        bonds = self._get_bond_normals()
+        bonds = self.get_bond_normals()
         Nb = np.sum([len(blst) for blst in bonds])
         if not local:
             bonds = [np.concatenate(bonds)]

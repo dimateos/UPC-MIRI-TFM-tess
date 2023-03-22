@@ -1,6 +1,7 @@
 from tess import Container
 from unittest import TestCase
 from pytest import raises as assertException
+from collections.abc import Iterable, Mapping
 
 # NOTE: there is no vector class imported for the tests, avoid deciding over Blender / numpy vectors / etc
 #       however it is recommended using one instead of working with raw tuples and lists
@@ -9,18 +10,29 @@ class TestCase_ext(TestCase):
     """" General asserting utilities """
 
     def assertListAlmostEqual(self, first, second, places=None, msg=None, delta=None):
-        """" Utility function to compare a pair of lists such as a vector """
+        """" Utility function to compare a pair of lists such as a vector, uses assertAlmostEqual on each pair of elements """
+        isinstance(first, Iterable)
+        isinstance(second, Iterable)
         self.assertEqual(len(first), len(second), msg=msg)
+
         for v1, v2 in zip(first, second):
             self.assertAlmostEqual(v1, v2, places=places, msg=msg, delta=delta)
 
     def assertNestedListAlmostEqual(self, first, second, places=None, msg=None, delta=None):
-        """" Utility function to compare list of vectors (single nesting) """
+        """" Utility function to compare list of vectors (shallow nesting), uses assertAlmostEqual on each pair of elements """
+        isinstance(first, Iterable)
+        isinstance(second, Iterable)
         self.assertEqual(len(first), len(second), msg=msg)
+
+        # could just use assertListAlmostEqual tho
         for l1, l2 in zip(first, second):
+            isinstance(l1, Iterable)
+            isinstance(l2, Iterable)
             self.assertEqual(len(l1), len(l2), msg=msg)
+
             for v1, v2 in zip(l1, l2):
                 self.assertAlmostEqual(v1, v2, places=places, msg=msg, delta=delta)
+
 
 class TestCase_cubicCell():
     """" Cubic cell asserting utilities """
@@ -47,6 +59,9 @@ class TestCase_cubicCell():
         number_of_edges =      12.0
         number_of_faces =      6.0
         vertex_orders =        [3, 3, 3, 3, 3, 3, 3, 3]
+
+        # face_freq_table: number of edges that each face has (as freq table)
+        # face_orders: number of edges per face (implemented in fork!)
 
         cell_face_freq_table = cell.face_freq_table()
         cell_face_orders = cell.face_orders()
@@ -221,6 +236,19 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         p_out= ( cc+r for cc in c )
         with assertException(Exception):
             cont = Container(points=[p_out], limits=bb)
+
+    def test_container_index(self):
+        # e.g. non unit cube
+        r=2
+        c=(1,1,1)
+        cell = self.get_cubic_cell(r,c)
+
+        wallsId = cell.neighbors()
+        wallsNormal = cell.normals()
+        wallsMap = dict(zip(wallsId, wallsNormal))
+        limitsMap = Container.get_limits_walls()
+
+        self.assertDictEqual(wallsMap, limitsMap)
 
 
     def test_translate(self):
@@ -441,8 +469,8 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
 
         cell.cut_plane(0,1,0,0)
         assert 0 in cell.neighbors()
-        cell.cut_plane(1,0,0,0, -10)
-        assert -10 in cell.neighbors()
+        cell.cut_plane(1,0,0,0, -7)
+        assert -7 in cell.neighbors()
         self.assertAlmostEqual(0.25, cell.volume())
 
 
@@ -498,11 +526,9 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         # unit cube centered at the origin
         cell = self.get_cubic_cell()
 
-        try:
-            # actually raises execpt unline cut_plane
+        # should raise execpt (unlike cut_plane atm)
+        with assertException(Exception):
             cell.cut_plane_particle(0,0,0)
-            raise self.failureException("Cell deleted entirely")
-        except: pass
 
         # no influence
         cell.cut_plane_particle(0,2,0)
@@ -524,8 +550,8 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
 
         cell.cut_plane_particle(0,1,0)
         assert 0 in cell.neighbors()
-        cell.cut_plane_particle(0,1,0, -10)
-        assert -10 in cell.neighbors()
+        cell.cut_plane_particle(0,1,0, -7)
+        assert -7 in cell.neighbors()
 
 class TestContainer(TestCase_ext, TestCase_container):
     def test_methods_data(self):
@@ -545,6 +571,12 @@ class TestContainer(TestCase_ext, TestCase_container):
         cell_volume = cell.volume()
         self.assertAlmostEqual(volume, cell_volume)
         assert -10 in cell.neighbors()
+
+    def test_wall_basic_index(self):
+        # atm the walls must be defined before constructing the container
+        walls = [ (0,1,0, 0.25) ]
+        cell = self.get_cubic_cont(walls=walls)[0]
+        assert Container.custom_walls_startID in cell.neighbors()
 
     def test_wall_basic_multiple(self):
         # atm the walls must be defined before constructing the container
