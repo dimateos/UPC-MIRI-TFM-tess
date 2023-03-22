@@ -15,10 +15,35 @@ def pytest_configure(config):
         print("> sys.version_info", sys.version_info)
         print("> sys.executable", sys.executable)
         print("> os.getcwd()", os.getcwd())
+        return
 
-        # redo the setup, will detect if the current version is already the last one
+        def recompile_module():
+            # redo the setup, will detect if the current version is already the last one
+            ret = os.system(sys.executable + " setup.py develop")
+
+            # # interestingly pip wont work
+            # ret = os.system(sys.executable + " -m pip install --editable .")
+            return ret
+
         try:
-            os.system(sys.executable + " setup.py develop")
-            # os.system(sys.executable + " -m pip install --editable .") # interestingly pip wont work
+            # compilation may fail as explained in the error except message
+            if recompile_module(): raise Exception("os level error")
+
         except:
-            print("TESTS FAILED CYTHON RECOMPILE...")
+            try:
+                # try to delete manually (usually will fail too)
+                ret = os.system("echo Attempting to delete .pyd && cd tess && del /Q /F _voro.*.pyd")
+                if ret: raise Exception("os level error")
+
+                if recompile_module(): raise Exception("os level error")
+
+            except:
+                # just print a message
+                print("""
+                -----------------------------------------------------------------------------------
+                                    *** TESTS FAILED CYTHON RECOMPILE... ***
+                Probably because some python interpreter instance is accessing the module
+                * OTHERWISE, consider deleting .pyd manually to free the module
+                * Other issues will require reinstalling the module, e.g. the test collection requires it installed...
+                -----------------------------------------------------------------------------------
+                """)
