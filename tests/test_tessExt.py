@@ -141,7 +141,7 @@ class TestCase_container():
         cont = Container(points=[c], limits=bb, walls=walls)
         return cont
 
-    def assert_cubic_cell_geo(self, cont):
+    def assert_cubic_cont_geo(self, cont):
         blocks =               (1, 1, 1)
         limits =               ((-0.5, -0.5, -0.5), (0.5, 0.5, 0.5))
 
@@ -202,6 +202,39 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         self.assert_cubic_cell_geo(cell)
         self.assert_cubic_cell_scale(cell)
         self.assert_cubic_cell_pos(cell, 0, r, c)
+
+        with assertException(Exception):
+            self.assertNestedListAlmostEqual(cell.vertices(), cell.vertices_local())
+
+    def test_methods_data_offcenteredParticle(self):
+        cell_positions = [(2., 2., 0), (1., 1., 0)]
+        r = 3
+        cells = Container(
+            cell_positions, limits=[(-r,-r,-0.5), (r,r,0.5)], periodic=False
+        )
+
+        # id of the particle depends on the order of the input points, not any sorting
+        c0, c1 = cells[0], cells[1]
+        self.assertListAlmostEqual(c0.pos, cell_positions[0])
+        self.assertListAlmostEqual(c1.pos, cell_positions[1])
+
+        # c0 just chips away 1/4 corner (Z dimension made 1.0)
+        v = 2*r*2*r*1
+        self.assertAlmostEqual(c0.volume()+c1.volume(), v)
+        self.assertAlmostEqual(c0.volume(), v*0.25*0.5)
+        self.assertAlmostEqual(c1.volume(), v*0.25*3 + v*0.25*0.5)
+
+        # c1 centroid is shifted
+        # in previous tests, the container was offcentered but the particle was in its center
+        self.assertListAlmostEqual(c0.centroid_local(), (0,0,0))
+        with assertException(Exception):
+            self.assertListAlmostEqual(c1.centroid_local(), (0,0,0))
+
+        with assertException(Exception):
+            self.assertNestedListAlmostEqual(c0.vertices(), c0.vertices_local())
+            self.assertNestedListAlmostEqual(c1.vertices(), c1.vertices_local())
+
+
 
     def test_methods_data_nonunit(self):
         # non unit cube
@@ -558,7 +591,7 @@ class TestContainer(TestCase_ext, TestCase_container):
         # unit cube centered at the origin
         cont = self.get_cubic_cont()
 
-        self.assert_cubic_cell_geo(cont)
+        self.assert_cubic_cont_geo(cont)
 
     def test_wall_basic(self):
         # atm the walls must be defined before constructing the container
