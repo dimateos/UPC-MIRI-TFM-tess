@@ -291,11 +291,12 @@ cdef class Container:
     def __dealloc__(self):
         del self.thisptr
 
+    # WIP Separate point insde from inside walls
     def point_inside(self, double x, double y, double z):
         return self.thisptr.point_inside(x, y, z)
 
     def put(self, int n, double x, double y, double z):
-        assert self.thisptr.point_inside(x, y, z)
+        #assert self.thisptr.point_inside(x, y, z)
         assert self.thisptr.put(n, x, y, z)
 
     def add_wall(self, double xc_, double yc_, double zc_, double ac_, int w_id_=-10):
@@ -371,7 +372,7 @@ cdef class ContainerPoly:
         return self.thisptr.point_inside(x, y, z)
 
     def put(self, int n, double x, double y, double z, double r):
-        assert self.thisptr.point_inside(x, y, z)
+        #assert self.thisptr.point_inside(x, y, z)
         assert self.thisptr.put(n,x,y,z,r)
 
     def add_wall(self, double xc_, double yc_, double zc_, double ac_, int w_id_=-10):

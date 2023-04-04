@@ -656,7 +656,10 @@ bool container_base::point_inside(double x, double y, double z)
 {
 	if (x < ax || x > bx || y < ay || y > by || z < az || z > bz)
 		return false;
-	return point_inside_walls(x, y, z);
+
+	// WIP maybe skip this to void convez hull? already know that the point is inside!
+	//return point_inside_walls(x, y, z);
+	return true;
 }
 
 /** Draws an outline of the domain in gnuplot format.

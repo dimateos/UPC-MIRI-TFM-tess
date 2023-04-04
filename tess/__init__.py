@@ -188,20 +188,29 @@ class Container(list[Cell]):
                 for n, (x, y, z, a) in enumerate(walls):
                     self._container.add_wall(x, y, z, a, Container.custom_walls_startID-n)
 
+            skips = 0
             for n, (x, y, z), r in zip(range(len(points)), points, radii):
-                try:
-                    rx, ry, rz = (
-                        roundedoff(x, lx0, Lx, px),
-                        roundedoff(y, ly0, Ly, py),
-                        roundedoff(z, lz0, Lz, pz),
-                    )
-                    self._container.put(n, rx, ry, rz, r)
-                except AssertionError:
-                    raise ValueError(
-                        "Could not insert point {} at ({}, {}, {}): point not inside the box.".format(
-                            n, rx, ry, rz
-                        )
-                    )
+                rx, ry, rz = (
+                    roundedoff(x, lx0, Lx, px),
+                    roundedoff(y, ly0, Ly, py),
+                    roundedoff(z, lz0, Lz, pz),
+                )
+
+                if (self._container.point_inside(rx, ry, rz)):
+                    self._container.put(n-skips, rx, ry, rz, r)
+                else:
+                    print(f"Could not insert point {n} at ({rx}, {ry}, {rz}): point not inside the box.")
+                    skips+=1
+
+                #try:
+                #    self._container.put(n, rx, ry, rz, r)
+                #except AssertionError:
+                #    raise ValueError(
+                #        "Could not insert point {} at ({}, {}, {}): point not inside the box.".format(
+                #            n, rx, ry, rz
+                #        )
+                #    )
+
         else:
             # no radii => use voro._Container
             self._container = _Container(
@@ -225,26 +234,37 @@ class Container(list[Cell]):
                 for n, (x, y, z, a) in enumerate(walls):
                     self._container.add_wall(x, y, z, a, Container.custom_walls_startID-n)
 
+            skips = 0
             for n, (x, y, z) in enumerate(points):
                 rx, ry, rz = (
                     roundedoff(x, lx0, Lx, px),
                     roundedoff(y, ly0, Ly, py),
                     roundedoff(z, lz0, Lz, pz),
                 )
-                try:
-                    self._container.put(n, rx, ry, rz)
-                except AssertionError:
-                    raise ValueError(
-                        "Could not insert point {} at ({}, {}, {}): point not inside the box.".format(
-                            n, rx, ry, rz
-                        )
-                    )
+
+                if (self._container.point_inside(rx, ry, rz)):
+                    self._container.put(n-skips, rx, ry, rz)
+                else:
+                    print(f"Could not insert point {n} at ({rx}, {ry}, {rz}): point not inside the box.")
+                    skips+=1
+
+                #try:
+                #    self._container.put(n, rx, ry, rz)
+                #except AssertionError:
+                #    raise ValueError(
+                #        "Could not insert point {} at ({}, {}, {}): point not inside the container.".format(
+                #            n, rx, ry, rz
+                #        )
+                #    )
 
         cells: List[Cell] = self._container.get_cells()
         list.__init__(self, cells)
 
         # Sometimes a _Container has calculation issues. That can lead to the following.
-        if len(self) != len(points):
+        #if len(self) != len(points):
+
+        print(f"Inserted {len(self)} / {len(points)} points")
+        if len(self) == 0:
             raise ValueError(
                 "Points could not be suitably fitted into the given box. \n\
 You may want to check that all points are within the box, and none are overlapping. {} / {}".format(

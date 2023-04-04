@@ -15,7 +15,6 @@ def pytest_configure(config):
         print("> sys.version_info", sys.version_info)
         print("> sys.executable", sys.executable)
         print("> os.getcwd()", os.getcwd())
-        return
 
         def recompile_module():
             # redo the setup, will detect if the current version is already the last one

@@ -93,9 +93,12 @@ class wall_list
 	template <class c_class>
 	bool apply_walls(c_class &c, double x, double y, double z)
 	{
+		// WIP in our case no wall should remove a cell entirely, should just be ignored
+		// but there is no way to undo a cut? check inside first?
 		for (wall **wp = walls; wp < wep; wp++)
-			if (!((*wp)->cut_cell(c, x, y, z)))
-				return false;
+			if ((*wp)->point_inside(x, y, z))
+				if (!((*wp)->cut_cell(c, x, y, z)))
+					return false;
 		return true;
 	}
 	void deallocate();
@@ -240,8 +243,11 @@ class container_base : public voro_base, public wall_list
 			k = ck;
 		}
 		c.init(x1, x2, y1, y2, z1, z2);
+
+		// WIP no need to fail here, just a non convex hull wall?
 		if (!apply_walls(c, x, y, z))
 			return false;
+
 		disp = ijk - i - nx * (j + ny * k);
 		return true;
 	}
