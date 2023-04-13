@@ -165,13 +165,24 @@ cdef class Cell:
         return list(zip(v[::3], v[1::3], v[2::3]))
 
     def vertices_local(self):
-        """A list of all the locations of the vertices of each face in local coordinates.
+        """A list of all the locations of the vertices of each face in local coordinates (cell pos).
 
         Returns
         -------
         A list of 3-tuples of floats. Each tuple corresponds to a single vertex."""
         cdef vector[double] v
         self.thisptr.vertices(v)
+        return list(zip(v[::3], v[1::3], v[2::3]))
+
+    def vertices_local_centroid(self):
+        """A list of all the locations of the vertices of each face in local coordinates (cell centroid).
+
+        Returns
+        -------
+        A list of 3-tuples of floats. Each tuple corresponds to a single vertex."""
+        cdef vector[double] v
+        c = self.centroid()
+        self.thisptr.vertices(c[0], c[1], c[2], v)
         return list(zip(v[::3], v[1::3], v[2::3]))
 
     def face_areas(self):
