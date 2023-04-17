@@ -115,8 +115,7 @@ cdef class Cell:
 
     @property
     def id(self):
-        """The ``id`` of the cell, which should generally correspond to its index in the
-        ``Container``."""
+        """The ``id`` of the cell inside the container, not necessarily matches the input source. """
         return self._id
 
 
@@ -302,7 +301,9 @@ cdef class Container:
     def __dealloc__(self):
         del self.thisptr
 
-    # WIP Separate point insde from inside walls
+    # TODO: Separate point inside from inside walls?
+    # TODO: may return true with a point ON BOUNDS LIMIT (not sure if precision error or intended) -> leads to except in put()
+    # TODO: seem to work correctly for points ON WALLS, returns false so the point is not put()
     def point_inside(self, double x, double y, double z):
         return self.thisptr.point_inside(x, y, z)
 
@@ -330,20 +331,22 @@ cdef class Container:
         cdef container_base *baseptr = (<container_base *>(self.thisptr))
         cdef c_loop_all *vl = new c_loop_all(dereference(baseptr))
 
-        cell = Cell()
-
         cdef int vcells_left = self.thisptr.total_particles()
         cdef int id
 
-        mylist = [None for _ in range(vcells_left)]
+        if vcells_left == 0:
+            return []
 
         if not vl.start():
             del vl
-            raise ValueError("Failed to start loop")
+            raise ValueError("Computation failed: failed to start loop")
 
+        mylist = [None for _ in range(vcells_left)]
+        cell = Cell()
         while True:
             if(self.thisptr.compute_cell(dereference(cell.thisptr), dereference(vl))):
                 cell._id = vl.pid()
+
                 assert cell._id < self.thisptr.total_particles(), (
                     "Cell id %s larger than total %s" % (cell._id, self.thisptr.total_particles()))
 
@@ -358,7 +361,7 @@ cdef class Container:
         del vl
 
         if vcells_left != 0:
-            raise ValueError("Computation failed")
+            raise ValueError("Computation failed: there are cells left")
         return mylist
 
     def get_limits(self):
@@ -368,7 +371,8 @@ cdef class Container:
         )
 
 
-# Same as container but with the addition of variable radii, just duplicate the class for performance
+# Same as container but with the addition of variable radii, just duplicate the class for performance?
+# TODO: then should use some static inlined functions instead of duplicating code
 cdef class ContainerPoly:
     cdef container_poly *thisptr
     def __cinit__(self, double ax_,double bx_,double ay_,double by_,double az_,double bz_,
@@ -405,17 +409,18 @@ cdef class ContainerPoly:
         cdef container_base *baseptr = (<container_base *>(self.thisptr))
         cdef c_loop_all *vl = new c_loop_all(dereference(baseptr))
 
-        cell = Cell()
-
         cdef int vcells_left = self.thisptr.total_particles()
         cdef int id
 
-        mylist = [None for _ in range(vcells_left)]
+        if vcells_left == 0:
+            return []
 
         if not vl.start():
             del vl
-            raise ValueError("Failed to start loop")
+            raise ValueError("Computation failed: failed to start loop")
 
+        mylist = [None for _ in range(vcells_left)]
+        cell = Cell()
         while True:
             if(self.thisptr.compute_cell(dereference(cell.thisptr), dereference(vl))):
                 vl.pos(cell._id, cell.x,cell.y,cell.z,cell.r)
@@ -430,7 +435,7 @@ cdef class ContainerPoly:
         del vl
 
         if vcells_left != 0:
-            raise ValueError("Computation failed")
+            raise ValueError("Computation failed: there are cells left")
         return mylist
 
     def get_limits(self):

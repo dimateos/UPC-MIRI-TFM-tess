@@ -291,7 +291,7 @@ class TestBoundaries(TestCase):
             [6.03961, 0.1, 4.95501],
             [7.17098, 0.1, 8.68142],
             [9.63211, 3.26588, 6.21613],
-            [6.86854, -0.57493, 5.03901],
+            [6.86854, -0.57493, 5.03901], # skipped negative
             [8.64132, 4.43874, 3],
             [6.03961, 5.5544, 4.95501],
             [7.17098, 6.71017, 8.68142],
@@ -302,10 +302,19 @@ class TestBoundaries(TestCase):
             [7.17098, 8.66222, 8.68142],
         ]
 
-        with self.assertRaises(ValueError):
-            Container(points, limits=limits, periodic=False)
-        with self.assertRaises(ValueError):
-            Container(points, limits=limits, radii=[0.1] * len(points), periodic=False)
+        # points ON LIMIT may return point_inside true and then pruduce and exception in put()
+        # so this asserts that error not really correct discard of points
+        with self.assertRaises(AssertionError):
+            Container(points, limits=limits)
+        with self.assertRaises(AssertionError):
+            Container(points, limits=limits, radii=[0.1] * len(points))
+
+        limits = 10
+        cont = Container(points, limits=limits)
+        self.assertNotEqual(len(cont), len(points))
+        contPoly = Container(points, limits=limits)
+        self.assertNotEqual(len(contPoly), len(points))
+        self.assertEqual(len(cont), len(contPoly))
 
     def assertListAlmostEqual(self, first, second, places=None, msg=None, delta=None):
         """" Utility function to compare a pair of lists """

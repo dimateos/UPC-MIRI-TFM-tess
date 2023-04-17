@@ -176,7 +176,7 @@ class Container(list[Cell]):
 
         # voro has two types: Container and ContainerPoly. ContainerPoly is for unequal radii
         if radii:
-            assert len(radii) == len(points)
+            assert len(radii) == N
             ContainerClass = _ContainerPoly
         else:
             ContainerClass = _Container
@@ -189,13 +189,16 @@ class Container(list[Cell]):
         )
 
         # additional container walls passed a SET of 4D tuples for plane specification
+        # TODO: store walls or get from c++ cont?
+        # TODO: get volume from cells/cont
         if walls:
-            for n, (x, y, z, a) in enumerate(walls):
-                self._container.add_wall(x, y, z, a, Container.custom_walls_startID-n)
+            for n, (x, y, z, d) in enumerate(walls):
+                self._container.add_wall(x, y, z, d, Container.custom_walls_startID-n)
 
-        # insert the points into the container
-        skips = 0
-        for n, (x, y, z) in zip(range(len(points)), points):
+        # insert the points into the container, keep a reference to the original source id
+        self.source_idx = []
+        self.source_skipped = 0
+        for n, (x, y, z) in zip(range(N), points):
             # get boxed positon for periodic containers
             rx, ry, rz = (
                 _roundedoff(x, lx0, Lx, px),
@@ -205,15 +208,17 @@ class Container(list[Cell]):
 
             # skip points not inside
             if (not self._container.point_inside(rx, ry, rz)):
-                print(f"Could not insert point {n} at ({rx}, {ry}, {rz}): point not inside the box.")
-                skips+=1
+                self.source_skipped +=1
+                #print(f"Could not insert point {n} at ({rx}, {ry}, {rz}): point not inside the container.")
 
             # insert with radii or not
             else:
-                if radii is not None:
-                    self._container.put(n-skips, rx, ry, rz, radii[n])
+                idx = n-self.source_skipped
+                self.source_idx.append(n)
+                if radii:
+                    self._container.put(idx, rx, ry, rz, radii[n])
                 else:
-                    self._container.put(n-skips, rx, ry, rz)
+                    self._container.put(idx, rx, ry, rz)
 
 
         # store produced cells as a self.list
