@@ -99,6 +99,7 @@ class Container(list[Cell]):
             -6: ( 0,  0,  1),
         }
 
+
     def __init__(self, points, limits=1.0, periodic=False, radii=None, blocks=None, walls=None):
         """Get the voronoi cells for a given set of points."""
         # make px, py, pz from periodic, whether periodic is a 3-tuple or bool
@@ -106,9 +107,7 @@ class Container(list[Cell]):
             px, py, pz = periodic
         except TypeError:
             px = py = pz = periodic
-        px = bool(px)
-        py = bool(py)
-        pz = bool(pz)
+        px, py, pz = bool(px), bool(py), bool(pz)
 
         # make lx, ly, lz from limits, whether limits is a 3-tuple or float
         # lx0, ly0, lz0 are the lower limits, lx, ly, lz are the upper limits
@@ -123,19 +122,14 @@ class Container(list[Cell]):
         except TypeError:
             lx0 = ly0 = lz0 = 0.0
             lx = ly = lz = limits
-        lx0 = float(lx0)
-        ly0 = float(ly0)
-        lz0 = float(lz0)
-        lx = float(lx)
-        ly = float(ly)
-        lz = float(lz)
+        lx0, ly0, lz0 = float(lx0), float(ly0), float(lz0)
+        lx, ly, lz =    float(lx), float(ly), float(lz)
         assert lx > lx0
         assert ly > ly0
         assert lz > lz0
 
         # The actual lengths on each side
         Lx, Ly, Lz = lx - lx0, ly - ly0, lz - lz0
-
         N = len(points)
 
         # make bx, by, bz from blocks, or make it up
@@ -155,122 +149,64 @@ class Container(list[Cell]):
 
         # If we have periodic conditions, we want to get the 'boxed' version of each position.
         # Each coordinate (x,y,z) may or may not be periodic, so we'll deal with them separately.
-        def roundedoff(n, lmin, l, periodic):
+        def _roundedoff(n, lmin, l, periodic):
             if periodic:
                 v = (float(n) - lmin) % l + lmin
                 return v
             else:
                 return float(n)
 
-        # voro has two types: Container and ContainerPoly. ContainerPoly is for unequal radii,
-        # Container is for no-radii.
-        # Now we choose the right one.
+
+        # voro has two types: Container and ContainerPoly. ContainerPoly is for unequal radii
         if radii is not None:
             assert len(radii) == len(points)
-            self._container = _ContainerPoly(
-                lx0,
-                lx,
-                ly0,
-                ly,
-                lz0,
-                lz,  # limits
-                bx,
-                by,
-                bz,  # block size
-                px,
-                py,
-                pz,  # periodicity
-                8,   # the initial memory allocation for each block
-            )
-
-            # Additional container walls passed a list of 4D tuples for plane specification
-            if walls:
-                for n, (x, y, z, a) in enumerate(walls):
-                    self._container.add_wall(x, y, z, a, Container.custom_walls_startID-n)
-
-            skips = 0
-            for n, (x, y, z), r in zip(range(len(points)), points, radii):
-                rx, ry, rz = (
-                    roundedoff(x, lx0, Lx, px),
-                    roundedoff(y, ly0, Ly, py),
-                    roundedoff(z, lz0, Lz, pz),
-                )
-
-                if (self._container.point_inside(rx, ry, rz)):
-                    self._container.put(n-skips, rx, ry, rz, r)
-                else:
-                    print(f"Could not insert point {n} at ({rx}, {ry}, {rz}): point not inside the box.")
-                    skips+=1
-
-                #try:
-                #    self._container.put(n, rx, ry, rz, r)
-                #except AssertionError:
-                #    raise ValueError(
-                #        "Could not insert point {} at ({}, {}, {}): point not inside the box.".format(
-                #            n, rx, ry, rz
-                #        )
-                #    )
-
+            ContainerClass = _ContainerPoly
         else:
-            # no radii => use voro._Container
-            self._container = _Container(
-                lx0,
-                lx,
-                ly0,
-                ly,
-                lz0,
-                lz,  # limits
-                bx,
-                by,
-                bz,  # block size
-                px,
-                py,
-                pz,  # periodicity
-                8,   # the initial memory allocation for each block
+            ContainerClass = _Container
+
+        self._container = ContainerClass(
+            lx0, lx, ly0, ly, lz0, lz,  # limits
+            bx, by, bz,                 # block size
+            px, py, pz,                 # periodicity
+            8,                          # the initial memory allocation for each block
+        )
+
+        # additional container walls passed a SET of 4D tuples for plane specification
+        if walls:
+            for n, (x, y, z, a) in enumerate(walls):
+                self._container.add_wall(x, y, z, a, Container.custom_walls_startID-n)
+
+        # insert the points into the container
+        skips = 0
+        for n, (x, y, z) in zip(range(len(points)), points):
+            # get boxed positon for periodic containers
+            rx, ry, rz = (
+                _roundedoff(x, lx0, Lx, px),
+                _roundedoff(y, ly0, Ly, py),
+                _roundedoff(z, lz0, Lz, pz),
             )
 
-            # Additional container walls passed a list of 4D tuples for plane specification
-            if walls:
-                for n, (x, y, z, a) in enumerate(walls):
-                    self._container.add_wall(x, y, z, a, Container.custom_walls_startID-n)
+            # skip points not inside
+            if (not self._container.point_inside(rx, ry, rz)):
+                print(f"Could not insert point {n} at ({rx}, {ry}, {rz}): point not inside the box.")
+                skips+=1
 
-            skips = 0
-            for n, (x, y, z) in enumerate(points):
-                rx, ry, rz = (
-                    roundedoff(x, lx0, Lx, px),
-                    roundedoff(y, ly0, Ly, py),
-                    roundedoff(z, lz0, Lz, pz),
-                )
-
-                if (self._container.point_inside(rx, ry, rz)):
-                    self._container.put(n-skips, rx, ry, rz)
+            # insert with radii or not
+            else:
+                if radii is not None:
+                    self._container.put(n-skips, rx, ry, rz, radii[n])
                 else:
-                    print(f"Could not insert point {n} at ({rx}, {ry}, {rz}): point not inside the box.")
-                    skips+=1
+                    self._container.put(n-skips, rx, ry, rz)
 
-                #try:
-                #    self._container.put(n, rx, ry, rz)
-                #except AssertionError:
-                #    raise ValueError(
-                #        "Could not insert point {} at ({}, {}, {}): point not inside the container.".format(
-                #            n, rx, ry, rz
-                #        )
-                #    )
 
+        # store produced cells as a self.list
         cells: List[Cell] = self._container.get_cells()
         list.__init__(self, cells)
 
-        # Sometimes a _Container has calculation issues. That can lead to the following.
-        #if len(self) != len(points):
-
-        print(f"Inserted {len(self)} / {len(points)} points")
+        # notify when no cells are produced
         if len(self) == 0:
-            raise ValueError(
-                "Points could not be suitably fitted into the given box. \n\
-You may want to check that all points are within the box, and none are overlapping. {} / {}".format(
-                    len(self), len(points)
-                )
-            )
+            print(f"Empty container, no voronoi cell was generated! Maybe all points ended OUT/ON the walls?")
+
 
     def get_limits(self):
         """
@@ -363,7 +299,6 @@ You may want to check that all points are within the box, and none are overlappi
             assert len(Qs) == 1
         return np.mean(Qs)
 
-
 def cart_to_spher(xyz):
     r"""Converts 3D cartesian coordinates to the angular portion of spherical coordinates, (theta, phi).
 
@@ -391,7 +326,6 @@ def cart_to_spher(xyz):
     )  # for elevation angle defined from Z-axis down
     ptsnew[:, 1] = np.arctan2(xyz[:, 1], xyz[:, 0])
     return ptsnew
-
 
 def orderQ(l, xyz, weights=1):
     r"""Returns :math:`Q_l`, for a given l (int) and a set of Cartesian coordinates xyz.

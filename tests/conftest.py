@@ -16,7 +16,7 @@ def pytest_configure(config):
         print("> sys.executable", sys.executable)
         print("> os.getcwd()", os.getcwd())
 
-        def recompile_module():
+        def _recompile_module():
             # redo the setup, will detect if the current version is already the last one
             ret = os.system(sys.executable + " setup.py develop")
 
@@ -25,16 +25,18 @@ def pytest_configure(config):
             return ret
 
         try:
+            print("> recompiling module...")
             # compilation may fail as explained in the error except message
-            if recompile_module(): raise Exception("os level error")
+            if _recompile_module(): raise Exception("os level error")
 
         except:
             try:
                 # try to delete manually (usually will fail too)
-                ret = os.system("echo Attempting to delete .pyd && cd tess && del /Q /F _voro.*.pyd")
+                print("> deleting .pyd and recompiling module...")
+                ret = os.system("cd tess && del /Q /F _voro.*.pyd")
                 if ret: raise Exception("os level error")
 
-                if recompile_module(): raise Exception("os level error")
+                if _recompile_module(): raise Exception("os level error")
 
             except:
                 # just print a message
