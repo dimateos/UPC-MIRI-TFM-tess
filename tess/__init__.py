@@ -87,6 +87,9 @@ class Container(list[Cell]):
     """ Custom walls start at -10 instead of -7 to help readability
         * NOTE: Could be set as constant inside .pyx
     """
+    custom_walls_precision = 4
+    """ To avoid repeated custom walls the 4D vectors are rounded """
+
 
     @staticmethod
     def get_limits_walls():
@@ -188,12 +191,32 @@ class Container(list[Cell]):
             8,                          # the initial memory allocation for each block
         )
 
-        # additional container walls passed a SET of 4D tuples for plane specification
-        # TODO: store walls or get from c++ cont?
-        # TODO: get volume from cells/cont
+        # additional container walls passed as a list of 4D tuples for plane specification
+        self.walls = []
+        self.walls_source_idx = []
+        self.walls_source_skipped = 0
         if walls:
-            for n, (x, y, z, d) in enumerate(walls):
-                self._container.add_wall(x, y, z, d, Container.custom_walls_startID-n)
+            for n, wall in enumerate(walls):
+                # round to a certain precision
+
+                if Container.custom_walls_precision > 0:
+                    wall_rounded = tuple(map(lambda x: round(x, Container.custom_walls_precision), wall))
+                else:
+                    wall_rounded = wall
+
+                # avoid repeated walls
+                if wall_rounded in self.walls:
+                    self.walls_source_skipped+=1
+                    continue
+
+                # add to the container with sequential idx (going from custom_walls_startID to -inf)
+                else:
+                    idx = Container.custom_walls_startID-n-self.walls_source_skipped
+                    self.walls_source_idx.append(n)
+                    self.walls.append(wall_rounded)
+
+                    x, y, z, d = wall_rounded
+                    self._container.add_wall(x, y, z, d, idx)
 
         # insert the points into the container, keep a reference to the original source id
         self.source_idx = []
