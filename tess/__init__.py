@@ -43,6 +43,7 @@ class Container(list[Cell]):
     limits : `float`, 3-tuple of float, or two 3-tuples of float
         The box limits.
         If given a float `L`, then the box limits are [0, 0, 0] to [L, L, L].
+        If given a 2-tuple `L0, L1`, then the box limits are [L0, L0, L0] to [L1, L1, L1].
         If given a 3-tuple `(Lx, Ly, Lz)`, limits are [0, 0, 0] to [Lx, Ly, Lz].
         If given two 3-tuples `(x0, y0, z0), (x1, y1, z1)`, limits are [x0, y0, z0] to [x1, y1, z1].
     periodic : `bool` or 3-tuple of `bool`, optional
@@ -108,36 +109,52 @@ class Container(list[Cell]):
         except TypeError:
             px = py = pz = periodic
         px, py, pz = bool(px), bool(py), bool(pz)
+        self.periodic = px, py, pz
 
-        # make lx, ly, lz from limits, whether limits is a 3-tuple or float
-        # lx0, ly0, lz0 are the lower limits, lx, ly, lz are the upper limits
-        # If `periodic`, then only the relative difference matters
+        # make lx, ly, lz from limits, whether limits is a 3-tuple, 2-tuple or single float...
         try:
-            l0, far_limits = limits
-            lx0, ly0, lz0 = l0
-            lx, ly, lz = far_limits
-        except ValueError:
-            lx0 = ly0 = lz0 = 0.0
-            lx, ly, lz = limits
+            d = len(limits)
+            assert d <= 3
+            if d == 3:
+                # single 3-tuple
+                lx0 = ly0 = lz0 = 0.0
+                lx, ly, lz = limits
+            else:
+                try:
+                    # two 3-tuple
+                    l0, far_limits = limits
+                    lx0, ly0, lz0 = l0
+                    lx, ly, lz = far_limits
+                except TypeError:
+                    # min max floats
+                    lx0 = ly0 = lz0 = limits[0]
+                    lx = ly = lz = limits[1]
+
         except TypeError:
+            # single float
             lx0 = ly0 = lz0 = 0.0
             lx = ly = lz = limits
+
         lx0, ly0, lz0 = float(lx0), float(ly0), float(lz0)
         lx, ly, lz =    float(lx), float(ly), float(lz)
-        assert lx > lx0
-        assert ly > ly0
-        assert lz > lz0
+        assert lx > lx0 and ly > ly0 and lz > lz0
+        self.min = lx0, ly0, lz0
+        self.max = lx, ly, lz
 
         # The actual lengths on each side
         Lx, Ly, Lz = lx - lx0, ly - ly0, lz - lz0
-        N = len(points)
+        self.dims = Lx, Ly, Lz
+        self.dimsHalf = Lx*0.5, Ly*0.5, Lz*0.5
+        self.radiusSq = self.dimsHalf[0]**2 + self.dimsHalf[1]**2 + self.dimsHalf[2]**2
+        from math import sqrt
+        self.radius = sqrt(self.radiusSq)
 
         # make bx, by, bz from blocks, or make it up
+        N = len(points)
         if blocks is None:
             V = Lx * Ly * Lz
             Nthird = pow(N / V, 1.0 / 3.0)
             blocks = round(Nthird * Lx), round(Nthird * Ly), round(Nthird * Lz)
-
         try:
             bx, by, bz = blocks
         except TypeError:
@@ -158,7 +175,7 @@ class Container(list[Cell]):
 
 
         # voro has two types: Container and ContainerPoly. ContainerPoly is for unequal radii
-        if radii is not None:
+        if radii:
             assert len(radii) == len(points)
             ContainerClass = _ContainerPoly
         else:

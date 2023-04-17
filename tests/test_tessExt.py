@@ -593,6 +593,36 @@ class TestContainer(TestCase_ext, TestCase_container):
 
         self.assert_cubic_cont_geo(cont)
 
+    def test_limits_options(self):
+        cont = Container(points=[], limits=1)
+        self.assertEqual(cont.min, (0,0,0))
+        self.assertEqual(cont.max, (1,1,1))
+        with assertException(Exception):
+            cont = Container(points=[], limits=(-1))
+
+        cont = Container(points=[], limits=(-1, 1))
+        self.assertEqual(cont.min, (-1,-1,-1))
+        self.assertEqual(cont.max, (1,1,1))
+        with assertException(Exception):
+            cont = Container(points=[], limits=(-1, -1))
+
+        cont = Container(points=[], limits=(1,2,3))
+        self.assertEqual(cont.min, (0,0,0))
+        self.assertEqual(cont.max, (1,2,3))
+        with assertException(Exception):
+            cont = Container(points=[], limits=(-1,-2,-3))
+
+        cont = Container(points=[], limits=((-1,-2,-3),(5,6,7)))
+        self.assertEqual(cont.min, (-1,-2,-3))
+        self.assertEqual(cont.max, (5,6,7))
+        with assertException(Exception):
+            cont = Container(points=[], limits=((-1,-2,-3),(-5,-6,-7)))
+
+        cont = Container(points=[], limits=((1,2,3),(5,6,7)))
+        self.assertEqual(cont.min, (1,2,3))
+        self.assertEqual(cont.max, (5,6,7))
+
+
     def test_wall_basic(self):
         # atm the walls must be defined before constructing the container
         walls = [ (0,1,0, 0.25) ]
