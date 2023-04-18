@@ -21,6 +21,13 @@
 #include "v_compute.hh"
 #include "rad_option.hh"
 
+// TODO: WIP avoid non-convex hulls walls cutting away entire cells
+// The solution would be an entire wall class that properly does inside tests
+// Other alternative solution is knowing that if all input points are inside,
+//		then no wall apply should cut an entire cell. In this case undo the cut.
+//		Not as simple as restoring indices, there is a lot of low-level memory managing.
+//#define IGNORE_CONVEX_WALLS
+
 namespace voro
 {
 
@@ -93,12 +100,21 @@ class wall_list
 	template <class c_class>
 	bool apply_walls(c_class &c, double x, double y, double z)
 	{
-		// WIP in our case no wall should remove a cell entirely, should just be ignored
-		// but there is no way to undo a cut? check inside first?
-		for (wall **wp = walls; wp < wep; wp++)
-			if ((*wp)->point_inside(x, y, z))
+		#ifndef IGNORE_CONVEX_WALLS
+			// Directly apply the cut
+			for (wall **wp = walls; wp < wep; wp++)
 				if (!((*wp)->cut_cell(c, x, y, z)))
 					return false;
+
+		#else
+			// Check inside first, but point inside should only test container bounds
+			for (wall **wp = walls; wp < wep; wp++)
+				if ((*wp)->point_inside(x, y, z))
+					if (!((*wp)->cut_cell(c, x, y, z)))
+						return false;
+
+		#endif // IGNORE_CONVEX_WALLS
+
 		return true;
 	}
 	void deallocate();
@@ -244,7 +260,7 @@ class container_base : public voro_base, public wall_list
 		}
 		c.init(x1, x2, y1, y2, z1, z2);
 
-		// WIP no need to fail here, just a non convex hull wall?
+		// TODO: WIP no need to fail here, just a non convex hull wall?
 		if (!apply_walls(c, x, y, z))
 			return false;
 

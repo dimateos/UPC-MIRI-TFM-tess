@@ -657,9 +657,12 @@ bool container_base::point_inside(double x, double y, double z)
 	if (x < ax || x > bx || y < ay || y > by || z < az || z > bz)
 		return false;
 
-	// WIP maybe skip this to void convez hull? already know that the point is inside!
-	//return point_inside_walls(x, y, z);
-	return true;
+	// TODO: WIP maybe skip this to avoid convex hull? already know that the point is inside!
+	#ifndef IGNORE_CONVEX_WALLS
+		return point_inside_walls(x, y, z);
+	#else
+		return true;
+	#endif // IGNORE_CONVEX_WALLS
 }
 
 /** Draws an outline of the domain in gnuplot format.

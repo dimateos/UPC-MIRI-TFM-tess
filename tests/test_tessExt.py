@@ -257,16 +257,21 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         bb = [ [cc-r for cc in c], [cc+r for cc in c] ]
 
         # point INSIDE
-        p_out= ( cc+r*0.99 for cc in c )
-        cont = Container(points=[p_out], limits=bb)
+        p_out= [tuple(cc+r*0.99 for cc in c)]
+        cont = Container(points=p_out, limits=bb)
 
-        # point OUTSIDE should raise except for now (maybe change with walls?)
-        p_out= ( cc+r*5 for cc in c )
-        with assertException(Exception):
-            cont = Container(points=[p_out], limits=bb)
+        # point OUTSIDE no longer raises and error
+        p_out= [tuple(cc+r*5 for cc in c)]
+        #with assertException(Exception):
+        #    cont = Container(points=[p_out], limits=bb)
+        cont = Container(p_out, limits=bb)
+        self.assertNotEqual(len(cont), len(p_out))
+        contPoly = Container(p_out, limits=bb)
+        self.assertNotEqual(len(contPoly), len(p_out))
+        self.assertEqual(len(cont), len(contPoly))
 
-        # point ON the boundary should raise except for now
-        p_out= ( cc+r for cc in c )
+        # point ON the boundary should raise except due to point_inside returning true but put() failing
+        p_out= [tuple(cc+r for cc in c)]
         with assertException(Exception):
             cont = Container(points=[p_out], limits=bb)
 
@@ -656,20 +661,52 @@ class TestContainer(TestCase_ext, TestCase_container):
 
     def test_wall_basic_redundant(self):
         # atm the walls must be defined before constructing the container
-        walls = [ (0,1,0, 0.250005), (0,1,0, 0.25) ]
-        cell = self.get_cubic_cont(walls=walls)[0]
+        def _gen_cont_cell(walls):
+            cont = self.get_cubic_cont(walls=walls)
+            cell = cont[0]
+            self.assertAlmostEqual(cell.volume(), 0.75)
+            return cont, cell
 
         # the wall id should be the one from the closer plane
+        cont, cell = _gen_cont_cell([ (0,1,0, 0.26), (0,1,0, 0.25) ])
+        self.assertEqual(len(cont.walls), 2)
+        self.assertEqual(cont.walls_source_skipped, 0)
         assert -11 in cell.neighbors()
-        self.assertAlmostEqual(cell.volume(), 0.75)
+
+        # but there is a limit in precision
+        cont, cell = _gen_cont_cell([ (0,1,0, 0.250005), (0,1,0, 0.25) ])
+        self.assertEqual(len(cont.walls), 1)
+        self.assertEqual(cont.walls_source_skipped, 1)
+        # the wall id should be the one from the closer plane
+        assert -10 in cell.neighbors()
+
+        # precision can be edited
+        Container.custom_walls_precision = 6
+        cont, cell = _gen_cont_cell([ (0,1,0, 0.250005), (0,1,0, 0.25) ])
+        self.assertEqual(len(cont.walls), 2)
+        self.assertEqual(cont.walls_source_skipped, 0)
+        assert -11 in cell.neighbors()
+
+        # precision can be unbounded
+        Container.custom_walls_precision = 0
+        cont, cell = _gen_cont_cell([ (0,1,0, 0.2500000005), (0,1,0, 0.25) ])
+        self.assertEqual(len(cont.walls), 2)
+        self.assertEqual(cont.walls_source_skipped, 0)
+        assert -11 in cell.neighbors()
+
+        Container.custom_walls_precision = -1
+        cont, cell = _gen_cont_cell([ (0,1,0, 0.2500000005), (0,1,0, 0.25) ])
+        self.assertEqual(len(cont.walls), 2)
+        self.assertEqual(cont.walls_source_skipped, 0)
+        assert -11 in cell.neighbors()
 
     def test_wall_basic_duplicated(self):
         # atm the walls must be defined before constructing the container
         walls = [ (0,1,0, 0.25), (0,1,0, 0.25) ]
         cell = self.get_cubic_cont(walls=walls)[0]
 
-        # the wall id of repeated walls should be the last added?
-        assert -11 in cell.neighbors()
+        # when repeated only the first one is preserved
+        assert -10 in cell.neighbors()
         self.assertAlmostEqual(cell.volume(), 0.75)
 
     def test_wall_basic_offcenter(self):
@@ -695,8 +732,13 @@ class TestContainer(TestCase_ext, TestCase_container):
         walls = [ (0,1,0, 0) ]
 
         # the plane goes through the center so the default point is touching
-        with assertException(Exception):
-            cont = self.get_cubic_cont(walls=walls)
+        #with assertException(Exception):
+        #    cont = self.get_cubic_cont(walls=walls)
+
+        # point ON no longer raises and error, just skips the point
+        cont = self.get_cubic_cont(walls=walls)
+        self.assertEqual(len(cont), 0)
+        self.assertEqual(cont.source_skipped, 1)
 
     def test_wall_basic_negative(self):
         # atm the walls must be defined before constructing the container
@@ -741,8 +783,12 @@ class TestContainer(TestCase_ext, TestCase_container):
 
         # try a point outside
         p=(0, 0.25, 0)
-        with assertException(Exception):
-            cell = Container(points=[p], limits=bb, walls=walls)[0]
+        #with assertException(Exception):
+        #    cell = Container(points=[p], limits=bb, walls=walls)[0]
+        # point ON no longer raises and error, just skips the point
+        cont = Container(points=[p], limits=bb, walls=walls)
+        self.assertEqual(len(cont), 0)
+        self.assertEqual(cont.source_skipped, 1)
 
         # try inverser normals
         walls = [ (-1,-1,0, 0) ]

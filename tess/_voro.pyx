@@ -302,8 +302,7 @@ cdef class Container:
         del self.thisptr
 
     # TODO: Separate point inside from inside walls?
-    # TODO: may return true with a point ON BOUNDS LIMIT (not sure if precision error or intended) -> leads to except in put()
-    # TODO: seem to work correctly for points ON WALLS, returns false so the point is not put()
+    # TODO: may return true with a point ON BOUNDS/WALL limit (seems like precision error) -> may lead to except in put()
     def point_inside(self, double x, double y, double z):
         return self.thisptr.point_inside(x, y, z)
 
