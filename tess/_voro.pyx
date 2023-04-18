@@ -134,6 +134,7 @@ cdef class Cell:
     def number_of_edges(self):
         return self.thisptr.number_of_edges()
 
+    # TODO: maybe keep stored some properties instead of recalculating
     def centroid(self):
             cdef double cx = 0
             cdef double cy = 0
@@ -141,6 +142,7 @@ cdef class Cell:
             self.thisptr.centroid(cx,cy,cz)
             x,y,z = self.pos
             return (cx+x,cy+y,cz+z)
+
     def centroid_local(self):
         cdef double cx = 0
         cdef double cy = 0
@@ -179,10 +181,24 @@ cdef class Cell:
         Returns
         -------
         A list of 3-tuples of floats. Each tuple corresponds to a single vertex."""
+        c = self.centroid_local()
         cdef vector[double] v
-        c = self.centroid()
-        self.thisptr.vertices(c[0], c[1], c[2], v)
+        self.thisptr.vertices(-c[0], -c[1], -c[2], v)
         return list(zip(v[::3], v[1::3], v[2::3]))
+
+    #def vertices_relative(self, x,y,z):
+    #    """A list of all the locations of the vertices of each face in relative coordinates.
+
+    #    Returns
+    #    -------
+    #    A list of 3-tuples of floats. Each tuple corresponds to a single vertex."""
+    #    cdef vector[double] v
+
+    #    dx = self.x+ (self.x-x)
+    #    dy = self.y+ (self.y-y)
+    #    dz = self.z+ (self.z-z)
+    #    self.thisptr.vertices(dx, dy, dz, v)
+    #    return list(zip(v[::3], v[1::3], v[2::3]))
 
     def face_areas(self):
         """A list of the areas of each face.

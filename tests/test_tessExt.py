@@ -18,6 +18,15 @@ class TestCase_ext(TestCase):
         for v1, v2 in zip(first, second):
             self.assertAlmostEqual(v1, v2, places=places, msg=msg, delta=delta)
 
+    def assertListNotAlmostEqual(self, first, second, places=None, msg=None, delta=None):
+        """" Utility function to compare a pair of lists such as a vector, uses assertNotAlmostEqual on each pair of elements """
+        isinstance(first, Iterable)
+        isinstance(second, Iterable)
+        self.assertEqual(len(first), len(second), msg=msg)
+
+        for v1, v2 in zip(first, second):
+            self.assertNotAlmostEqual(v1, v2, places=places, msg=msg, delta=delta)
+
     def assertNestedListAlmostEqual(self, first, second, places=None, msg=None, delta=None):
         """" Utility function to compare list of vectors (shallow nesting), uses assertAlmostEqual on each pair of elements """
         isinstance(first, Iterable)
@@ -32,6 +41,21 @@ class TestCase_ext(TestCase):
 
             for v1, v2 in zip(l1, l2):
                 self.assertAlmostEqual(v1, v2, places=places, msg=msg, delta=delta)
+
+    def assertNestedListNotAlmostEqual(self, first, second, places=None, msg=None, delta=None):
+        """" Utility function to compare list of vectors (shallow nesting), uses assertNotAlmostEqual on each pair of elements """
+        isinstance(first, Iterable)
+        isinstance(second, Iterable)
+        self.assertEqual(len(first), len(second), msg=msg)
+
+        # could just use assertListAlmostEqual tho
+        for l1, l2 in zip(first, second):
+            isinstance(l1, Iterable)
+            isinstance(l2, Iterable)
+            self.assertEqual(len(l1), len(l2), msg=msg)
+
+            for v1, v2 in zip(l1, l2):
+                self.assertNotAlmostEqual(v1, v2, places=places, msg=msg, delta=delta)
 
 
 class TestCase_cubicCell():
@@ -174,6 +198,9 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
             assert len(cell.centroid()) == 3
             assert len(cell.vertex_orders()) > 0
             assert len(cell.vertices()) > 0
+            assert len(cell.vertices_local()) > 0
+            assert len(cell.vertices_local_centroid()) > 0
+            #assert len(cell.vertices_relative(0,0,0)) > 0
             assert len(cell.face_areas()) > 0
             assert len(cell.face_orders()) > 0
             assert len(cell.face_freq_table()) > 0
@@ -289,9 +316,18 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         self.assertDictEqual(wallsMap, limitsMap)
 
 
-    def test_translate(self):
+    def test_translate_relative_pos(self):
         # unit cube centered at the origin
         cell = self.get_cubic_cell()
+
+        # store positions
+        pos1 = cell.pos
+        c1 = cell.centroid()
+        cl1 = cell.centroid_local()
+        v1 = cell.vertices()
+        vl1 = cell.vertices_local()
+        vcl1 = cell.vertices_local_centroid()
+        #vcl1 = cell.vertices_relative(*c1)
 
         # translate some amount in all direction
         disp = 10
@@ -301,11 +337,19 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         self.assert_cubic_cell_scale(cell)
         self.assert_cubic_cell_pos(cell, disp)
 
+        pos2 = cell.pos
+        c2 = cell.centroid()
+        cl2 = cell.centroid_local()
+        v2 = cell.vertices()
+        vl2 = cell.vertices_local()
+        vcl2 = cell.vertices_local_centroid()
+        #vcl2 = cell.vertices_relative(*c2)
+
         # cell was translated so original pos test should fail
         with assertException(Exception):
             self.assert_cubic_cell_pos(cell)
 
-        # test negative and each axis
+        # test negative and each axis, go back to origin
         cell.translate(-disp, 0, 0)
         cell.translate(0, -disp, 0)
         cell.translate(0, 0, -disp)
@@ -313,6 +357,45 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         self.assert_cubic_cell_geo(cell)
         self.assert_cubic_cell_scale(cell)
         self.assert_cubic_cell_pos(cell, 0)
+
+        pos3 = cell.pos
+        c3 = cell.centroid()
+        cl3 = cell.centroid_local()
+        v3 = cell.vertices()
+        vl3 = cell.vertices_local()
+        vcl3 = cell.vertices_local_centroid()
+        #vcl3 = cell.vertices_relative(*c3)
+
+        # local + pos should be global
+        v1_calc = [tuple( map(sum, zip(v, pos1)) ) for v in vl1]
+        v2_calc = [tuple( map(sum, zip(v, pos2)) ) for v in vl2]
+        v3_calc = [tuple( map(sum, zip(v, pos3)) ) for v in vl3]
+        self.assertListAlmostEqual(v1, v1_calc)
+        self.assertListAlmostEqual(v2, v2_calc)
+        self.assertListAlmostEqual(v3, v3_calc)
+
+        # centroid at origin so local centroid equal
+        self.assertListAlmostEqual(pos1, c1)
+        self.assertListAlmostEqual(c1, (0,0,0))
+        self.assertNestedListAlmostEqual(vl1, vcl1)
+
+        # p1 and p3 are the same
+        self.assertListAlmostEqual(pos1, pos3)
+        self.assertListAlmostEqual(c1, c3)
+        self.assertListAlmostEqual(cl1, cl3)
+        self.assertNestedListAlmostEqual(v1, v3)
+        self.assertNestedListAlmostEqual(vl1, vl3)
+        self.assertNestedListAlmostEqual(vcl1, vcl3)
+
+        # p2 differs on world pos
+        self.assertListNotAlmostEqual(pos1, pos2)
+        self.assertListNotAlmostEqual(c1, c2)
+        self.assertNestedListNotAlmostEqual(v1, v2)
+        # but locals match
+        self.assertListAlmostEqual(cl1, cl2)
+        self.assertNestedListAlmostEqual(vl1, vl2)
+        self.assertNestedListAlmostEqual(vcl1, vcl2)
+        pass
 
 
     def test_cut_plane_halfY(self):

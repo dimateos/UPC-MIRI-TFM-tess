@@ -23,9 +23,15 @@
 
 // TODO: WIP avoid non-convex hulls walls cutting away entire cells
 // The solution would be an entire wall class that properly does inside tests
+//		e.g. all walls are checked, not using spatial information in any way
 // Other alternative solution is knowing that if all input points are inside,
 //		then no wall apply should cut an entire cell. In this case undo the cut.
 //		Not as simple as restoring indices, there is a lot of low-level memory managing.
+// Maybe input points are not checked point_inside walls and the check that per wall before cut
+// PROBLEM: some walls do not reduce volume to zero but replace connected faces...
+// 		Maybe then do not let walls replace a non-wall/bound index, but allow creating new cuts
+//		Then again hard to undo a cut, plus maybe there are more edge cases...
+// POSTFIX: try to classify generated cells are inside or not the original non-convex volume
 //#define IGNORE_CONVEX_WALLS
 
 namespace voro
