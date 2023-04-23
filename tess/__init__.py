@@ -87,12 +87,13 @@ class Container(list[Cell]):
     """ Custom walls start at -10 instead of -7 to help readability
         * NOTE: Could be set as constant inside .pyx
     """
-    custom_walls_precision = 4
-    """ To avoid repeated custom walls the 4D vectors are rounded """
-
 
     @staticmethod
-    def get_limits_walls():
+    def get_conainerId_limitWalls():
+        return [ -1, -2, -3, -4, -5, -6 ]
+        #return [ Container.limits_walls_startID-i for i in range(Container.limits_walls_amountID) ]
+    @staticmethod
+    def get_normals_limitWalls():
         """ Get a map from the negative id of the wall to a tuple containing its normal """
         return {
             -1: (-1,  0,  0),
@@ -102,6 +103,23 @@ class Container(list[Cell]):
             -5: ( 0,  0, -1),
             -6: ( 0,  0,  1),
         }
+
+
+    custom_walls_precision = 4
+    """ To avoid repeated custom walls the 4D vectors are rounded """
+
+    @staticmethod
+    def get_rounded_wall(wall: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+        if Container.custom_walls_precision > 0:
+            return tuple(map(lambda x: round(x, Container.custom_walls_precision), wall))
+        else:
+            return wall
+
+    def get_containerId_wall(self, n):
+        return Container.custom_walls_startID-n-self.walls_source_skipped
+    def get_vector4D_wall(self, containerId):
+        linearId = -containerId + Container.custom_walls_startID
+        return self.walls[linearId]
 
 
     def __init__(self, points, limits=1.0, periodic=False, radii=None, blocks=None, walls=None):
@@ -193,16 +211,13 @@ class Container(list[Cell]):
 
         # additional container walls passed as a list of 4D tuples for plane specification
         self.walls = []
+        self.walls_cont_idx = []
         self.walls_source_idx = []
         self.walls_source_skipped = 0
         if walls:
             for n, wall in enumerate(walls):
                 # round to a certain precision
-
-                if Container.custom_walls_precision > 0:
-                    wall_rounded = tuple(map(lambda x: round(x, Container.custom_walls_precision), wall))
-                else:
-                    wall_rounded = wall
+                wall_rounded = Container.get_rounded_wall(wall)
 
                 # avoid repeated walls
                 if wall_rounded in self.walls:
@@ -212,8 +227,9 @@ class Container(list[Cell]):
                 # add to the container with sequential idx (going from custom_walls_startID to -inf)
                 else:
                     idx = Container.custom_walls_startID-n-self.walls_source_skipped
-                    self.walls_source_idx.append(n)
                     self.walls.append(wall_rounded)
+                    self.walls_cont_idx.append(idx)
+                    self.walls_source_idx.append(n)
 
                     x, y, z, d = wall_rounded
                     self._container.add_wall(x, y, z, d, idx)

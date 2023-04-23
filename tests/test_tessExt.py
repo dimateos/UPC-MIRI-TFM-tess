@@ -311,7 +311,7 @@ class TestCell(TestCase_ext, TestCase_cubicCell):
         wallsId = cell.neighbors()
         wallsNormal = cell.normals()
         wallsMap = dict(zip(wallsId, wallsNormal))
-        limitsMap = Container.get_limits_walls()
+        limitsMap = Container.get_normals_limitWalls()
 
         self.assertDictEqual(wallsMap, limitsMap)
 
