@@ -30,7 +30,7 @@ const int init_delete_size=256;
 /** The initial size for the auxiliary delete stack. */
 const int init_delete2_size=256;
 /** The initial size for the wall pointer array. */
-const int init_wall_size=32;
+const int init_wall_size=128;
 /** The default initial size for the ordering class. */
 const int init_ordering_size=4096;
 /** The initial size of the pre_container chunk index. */
@@ -53,7 +53,7 @@ const int max_delete2_size=16777216;
 /** The maximum amount of particle memory allocated for a single region. */
 const int max_particle_memory=16777216;
 /** The maximum size for the wall pointer array. */
-const int max_wall_size=2048;
+const int max_wall_size=8192;
 /** The maximum size for the ordering class. */
 const int max_ordering_size=67108864;
 /** The maximum size for the pre_container chunk index. */
@@ -70,18 +70,18 @@ const int pre_container_chunk_size=1024;
  * plane routine bails out due to floating point problems. At level 2, general
  * messages about memory expansion are printed. At level 3, technical details
  * about memory management are printed. */
-#define VOROPP_VERBOSE 0
+#define VOROPP_VERBOSE 1
 #endif
 
 /** If a point is within this distance of a cutting plane, then the code
- * assumes that point exactly lies on the plane. */
-const double tolerance=1e-11;
+ * assumes that point exactly lies on the plane./ */
+const double tolerance=1e-2; // original 1e-11 is too much for blender creates countless double vertices...
 
 /** If a point is within this distance of a cutting plane, then the code stores
  * whether this point is inside, outside, or exactly on the cutting plane in
- * the marginal cases buffer, to prevent the test giving a different result on
+ * the marginal cases buffer, to prevent the test giving a different {result on
  * a subsequent evaluation due to floating point rounding errors. */
-const double tolerance2=2e-11;
+const double tolerance2=2*tolerance;
 
 /** The square of the tolerance, used when deciding whether some squared
  * quantities are large enough to be used. */

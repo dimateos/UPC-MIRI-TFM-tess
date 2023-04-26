@@ -33,7 +33,8 @@ def pytest_configure(config):
             try:
                 # try to delete manually (usually will fail too)
                 print("> deleting .pyd and recompiling module...")
-                ret = os.system("cd tess && del /Q /F _voro.*.pyd")
+                # includes pybin and also library binaries -> only really needed when some constant is change and doesnt recompile
+                ret = os.system("cd tess && del /Q /F _voro.*.pyd && rd /S /Q ../build")
                 if ret: raise Exception("os level error")
 
                 if _recompile_module(): raise Exception("os level error")
