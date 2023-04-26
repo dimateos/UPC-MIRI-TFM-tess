@@ -105,8 +105,12 @@ class Container(list[Cell]):
         }
 
 
-    custom_walls_precision = 4
-    """ To avoid repeated custom walls the 4D vectors are rounded """
+    @property
+    def custom_walls_precision_default():
+        """ Fixed original precision """
+        return 4
+    custom_walls_precision = custom_walls_precision_default
+    """ To avoid repeated custom walls the 4D vectors are rounded (default 4, set to <=0 to disable)"""
 
     @staticmethod
     def get_rounded_wall(wall: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
