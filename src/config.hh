@@ -14,17 +14,18 @@ namespace voro {
 
 // These constants set the initial memory allocation for the Voronoi cell
 /** The initial memory allocation for the number of vertices. */
-const int init_vertices=256;
+const int init_vertices=512;
 /** The initial memory allocation for the maximum vertex order. */
-const int init_vertex_order=64;
+const int init_vertex_order=32;
 /** The initial memory allocation for the number of regular vertices of order
  * 3. */
 const int init_3_vertices=256;
 /** The initial memory allocation for the number of vertices of higher order.
  */
-const int init_n_vertices=8;
+const int init_n_vertices=256;
 /** The initial buffer size for marginal cases used by the suretest class. */
 const int init_marginal=64;
+
 /** The initial size for the delete stack. */
 const int init_delete_size=256;
 /** The initial size for the auxiliary delete stack. */
@@ -46,6 +47,7 @@ const int max_vertex_order=2048;
 const int max_n_vertices=16777216;
 /** The maximum buffer size for marginal cases used by the suretest class. */
 const int max_marginal=16777216;
+
 /** The maximum size for the delete stack. */
 const int max_delete_size=16777216;
 /** The maximum size for the auxiliary delete stack. */
@@ -70,7 +72,7 @@ const int pre_container_chunk_size=1024;
  * plane routine bails out due to floating point problems. At level 2, general
  * messages about memory expansion are printed. At level 3, technical details
  * about memory management are printed. */
-#define VOROPP_VERBOSE 1
+#define VOROPP_VERBOSE 3
 #endif
 
 /** If a point is within this distance of a cutting plane, then the code
@@ -88,7 +90,7 @@ const double tolerance2=2*tolerance;
 const double tolerance_sq=tolerance*tolerance;
 
 /** A large number that is used in the computation. */
-const double large_number=1e30;
+const double large_number=1e30; // original 1e30
 
 /** A radius to use as a placeholder when no other information is available. */
 const double default_radius=0.5;
@@ -102,7 +104,7 @@ const double optimal_particles=5.6;
 
 /** If this is set to 1, then the code reports any instances of particles being
  * put outside of the container geometry. */
-#define VOROPP_REPORT_OUT_OF_BOUNDS 0
+#define VOROPP_REPORT_OUT_OF_BOUNDS 1
 
 /** Voro++ returns this status code if there is a file-related error, such as
  * not being able to open file. */

@@ -376,7 +376,7 @@ cdef class Container:
         del vl
 
         if vcells_left != 0:
-            raise ValueError("Computation failed: there are cells left")
+            raise ValueError(f"Computation failed: there are cells left ({vcells_left} / {self.thisptr.total_particles()})")
         return mylist
 
     def get_limits(self):
@@ -450,7 +450,7 @@ cdef class ContainerPoly:
         del vl
 
         if vcells_left != 0:
-            raise ValueError("Computation failed: there are cells left")
+            raise ValueError(f"Computation failed: there are cells left ({vcells_left} / {self.thisptr.total_particles()})")
         return mylist
 
     def get_limits(self):
