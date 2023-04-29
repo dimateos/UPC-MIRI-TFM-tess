@@ -126,8 +126,11 @@ class Container(list[Cell]):
         return self.walls[linearId]
 
 
+
     def __init__(self, points, limits=1.0, periodic=False, radii=None, blocks=None, walls=None):
         """Get the voronoi cells for a given set of points."""
+        # OPT:: most self.stuff should be properties
+
         # make px, py, pz from periodic, whether periodic is a 3-tuple or bool
         try:
             px, py, pz = periodic

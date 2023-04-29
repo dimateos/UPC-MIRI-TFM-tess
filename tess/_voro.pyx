@@ -9,6 +9,8 @@ from libcpp.vector cimport vector
 from libcpp cimport bool as cbool
 from cython.operator cimport dereference
 
+EXCECT_MISSING_CELLS = False
+
 cdef extern from "voro++.hh" namespace "voro":
     cdef cppclass container_base:
         # declared but derived classes not actually deriving
@@ -376,7 +378,9 @@ cdef class Container:
         del vl
 
         if vcells_left != 0:
-            raise ValueError(f"Computation failed: there are cells left ({vcells_left} / {self.thisptr.total_particles()})")
+            msg = f"Computation incomplete: there are cells left ({vcells_left} / {self.thisptr.total_particles()})"
+            if EXCECT_MISSING_CELLS: raise ValueError(msg)
+            else: print(msg)
         return mylist
 
     def get_limits(self):
@@ -450,7 +454,9 @@ cdef class ContainerPoly:
         del vl
 
         if vcells_left != 0:
-            raise ValueError(f"Computation failed: there are cells left ({vcells_left} / {self.thisptr.total_particles()})")
+            msg = f"Computation incomplete: there are cells left ({vcells_left} / {self.thisptr.total_particles()})"
+            if EXCECT_MISSING_CELLS: raise ValueError(msg)
+            else: print(msg)
         return mylist
 
     def get_limits(self):
